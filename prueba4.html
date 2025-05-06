@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ENIT Campus Navigation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <style>
+    #map { height: 500px; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button, select { padding: 10px 15px; font-size: 1rem; margin-right: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>ENIT Campus Map</h1>
+  <button onclick="startTracking()">Start GPS</button>
+  <label for="destination">Route to:</label>
+  <select id="destination" onchange="drawRoute()">
+    <option value="">Select a place</option>
+    <option value="entrance">Main Entrance</option>
+    <option value="library">Library</option>
+    <option value="cafeteria">Cafeteria</option>
+    <option value="building_c">Building C</option>
+    <option value="gym">Gym</option>
+  </select>
+
+  <div id="info"></div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+  <script>
+    const enitCoords = [43.22476, 0.05044];
+    const map = L.map('map').setView(enitCoords, 18);
+
+    // Campus boundary restriction
+    const bounds = L.latLngBounds(
+      [43.2235, 0.0459],
+      [43.2280, 0.0536]
+    );
+    map.setMaxBounds(bounds);
+    map.options.minZoom = 17;
+    map.options.maxZoom = 20;
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 20,
+    }).addTo(map);
+
+    const locations = {
+      entrance:   { name: "Main Entrance", coords: [43.225018, 0.052059] },
+      library:    { name: "Library", coords: [43.224945, 0.051151] },
+      cafeteria:  { name: "Cafeteria", coords: [43.227491, 0.050948] },
+      building_c: { name: "Building C", coords: [43.224918, 0.050762] },
+      gym:        { name: "Gym", coords: [43.225022, 0.050141] },
+    };
+
+    let marker, accuracyCircle, geojsonLayer, watchId = null;
+    let routingControl = null;
+
+    function startTracking() {
+      if (!navigator.geolocation) {
+        document.getElementById("info").innerHTML = "Geolocation not supported.";
+        return;
+      }
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+
+      watchId = navigator.geolocation.watchPosition(showPosition, showError, {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      });
+    }
+
+    function showPosition(position) {
+      const { latitude: lat, longitude: lon, altitude: alt, accuracy } = position.coords;
+
+      // Limit display size of the blue accuracy circle
+      const visualAccuracy = Math.min(accuracy, 30);
+
+      if (marker) {
+        marker.setLatLng([lat, lon]);
+        accuracyCircle.setLatLng([lat, lon]).setRadius(visualAccuracy);
+      } else {
+        marker = L.marker([lat, lon]).addTo(map).bindPopup("You are here").openPopup();
+        accuracyCircle = L.circle([lat, lon], {
+          radius: visualAccuracy,
+          color: "blue",
+          fillColor: "#cce5ff",
+          fillOpacity: 0.3
+        }).addTo(map);
+      }
+
+      map.setView([lat, lon], 19);
+
+      let nearbyPlace = "Unknown";
+      for (const key in locations) {
+        const loc = locations[key];
+        const dist = getDistance(lat, lon, loc.coords[0], loc.coords[1]);
+        if (dist < 20) nearbyPlace = loc.name;
+      }
+
+      let detectedBuilding = "Outside building";
+      if (geojsonLayer) {
+        geojsonLayer.eachLayer(layer => {
+          const polygon = turf.polygon(layer.feature.geometry.coordinates);
+          const point = turf.point([lon, lat]);
+          if (turf.booleanPointInPolygon(point, polygon)) {
+            detectedBuilding = layer.feature.properties.name || "Building";
+          }
+        });
+      }
+
+      const baseAltitude = 320;
+      let floor = "Unknown";
+      if (alt !== null && !isNaN(alt)) {
+        const relAlt = alt - baseAltitude;
+        floor = relAlt < 2 ? "Ground floor" :
+                relAlt < 5 ? "First floor" :
+                relAlt < 8 ? "Second floor" : "Upper floor";
+      }
+
+      document.getElementById("info").innerHTML = `
+        <p><strong>Latitude:</strong> ${lat.toFixed(6)}<br>
+        <strong>Longitude:</strong> ${lon.toFixed(6)}<br>
+        <strong>Altitude:</strong> ${alt !== null ? alt.toFixed(2) + " m" : "Not available"}<br>
+        <strong>GPS Accuracy:</strong> ±${accuracy.toFixed(1)} m<br>
+        <strong>Estimated Floor:</strong> ${floor}<br>
+        <strong>Approximate Location:</strong> ${nearbyPlace}<br>
+        <strong>Detected Building:</strong> ${detectedBuilding}</p>
+      `;
+
+      // Update route if destination is selected
+      const destinationKey = document.getElementById("destination").value;
+      if (destinationKey && routingControl) {
+        const destination = locations[destinationKey];
+        routingControl.setWaypoints([
+          L.latLng(lat, lon),
+          L.latLng(destination.coords[0], destination.coords[1])
+        ]);
+      }
+    }
+
+    function drawRoute() {
+      const destinationKey = document.getElementById("destination").value;
+      if (!destinationKey || !marker) {
+        alert("Please start GPS and select a destination.");
+        return;
+      }
+
+      const destination = locations[destinationKey];
+      const userCoords = marker.getLatLng();
+
+      if (routingControl) {
+        map.removeControl(routingControl);
+      }
+
+      // ✅ Use OSRM pedestrian profile
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(userCoords.lat, userCoords.lng),
+          L.latLng(destination.coords[0], destination.coords[1])
+        ],
+        router: L.Routing.osrmv1({
+          serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
+        }),
+        routeWhileDragging: false,
+        show: false,
+        addWaypoints: false,
+        lineOptions: {
+          styles: [{ color: 'green', weight: 5 }]
+        },
+        createMarker: () => null
+      }).addTo(map);
+    }
+
+    function showError(error) {
+      const errors = {
+        1: "Permission denied.",
+        2: "Position unavailable.",
+        3: "Timeout expired.",
+      };
+      document.getElementById("info").innerHTML = `<p>Error: ${errors[error.code] || "Unknown error."}</p>`;
+    }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = x => x * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    // Optional GeoJSON building overlay
+    fetch('edificios.geojson')
+      .then(res => res.json())
+      .then(data => {
+        geojsonLayer = L.geoJSON(data, {
+          onEachFeature: (feature, layer) => {
+            const name = feature.properties.name || "Building";
+            layer.bindPopup(name);
+          },
+          pointToLayer: (feature, latlng) => {
+            return L.circleMarker(latlng, {
+              radius: 6,
+              color: "#007bff",
+              fillOpacity: 0.6
+            });
+          }
+        }).addTo(map);
+      })
+      .catch(error => {
+        console.error("Error loading GeoJSON:", error);
+      });
+  </script>
+</body>
+</html>
