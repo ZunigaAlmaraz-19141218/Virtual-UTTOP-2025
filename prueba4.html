@@ -7,9 +7,31 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <style>
-    #map { height: 500px; margin-top: 20px; }
+    #map { height: 500px; margin-top: 20px; position: relative; }
     body { font-family: Arial, sans-serif; padding: 20px; }
     button, select { padding: 10px 15px; font-size: 1rem; margin-right: 10px; }
+    .compass-container {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      width: 80px;
+      height: 80px;
+      z-index: 1000;
+    }
+    .compass {
+      width: 100%;
+      height: 100%;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Compass_rose_pale.svg/512px-Compass_rose_pale.svg.png');
+      background-size: cover;
+      transform: rotate(0deg);
+      transform-origin: center center;
+    }
+    .directions-box {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #f9f9f9;
+    }
   </style>
 </head>
 <body>
@@ -28,6 +50,10 @@
 
   <div id="info"></div>
   <div id="map"></div>
+  <div class="compass-container">
+    <div class="compass" id="compass"></div>
+  </div>
+  <div id="directions" class="directions-box"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
@@ -37,11 +63,10 @@
     const enitCoords = [43.22476, 0.05044];
     const map = L.map('map').setView(enitCoords, 18);
 
-    // Campus boundary restriction
-    const bounds = L.latLngBounds(
+    const bounds = L.latLngBounds([
       [43.2235, 0.0459],
       [43.2280, 0.0536]
-    );
+    ]);
     map.setMaxBounds(bounds);
     map.options.minZoom = 17;
     map.options.maxZoom = 20;
@@ -59,6 +84,29 @@
       gym:        { name: "Gym", coords: [43.225022, 0.050141] },
     };
 
+    const aulas = [
+      {
+        name: "Classroom A101",
+        polygon: turf.polygon([[
+          [0.050650, 43.224870],
+          [0.050670, 43.224870],
+          [0.050670, 43.224890],
+          [0.050650, 43.224890],
+          [0.050650, 43.224870]
+        ]])
+      },
+      {
+        name: "Classroom B202",
+        polygon: turf.polygon([[
+          [0.050600, 43.224800],
+          [0.050620, 43.224800],
+          [0.050620, 43.224820],
+          [0.050600, 43.224820],
+          [0.050600, 43.224800]
+        ]])
+      }
+    ];
+
     let marker, accuracyCircle, geojsonLayer, watchId = null;
     let routingControl = null;
 
@@ -66,6 +114,13 @@
       if (!navigator.geolocation) {
         document.getElementById("info").innerHTML = "Geolocation not supported.";
         return;
+      }
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+          if (result.state === 'denied') {
+            alert("Please enable GPS/location permission in your browser settings.");
+          }
+        });
       }
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
 
@@ -77,9 +132,7 @@
     }
 
     function showPosition(position) {
-      const { latitude: lat, longitude: lon, altitude: alt, accuracy } = position.coords;
-
-      // Limit display size of the blue accuracy circle
+      const { latitude: lat, longitude: lon, altitude: alt, accuracy, heading } = position.coords;
       const visualAccuracy = Math.min(accuracy, 30);
 
       if (marker) {
@@ -97,22 +150,17 @@
 
       map.setView([lat, lon], 19);
 
-      let nearbyPlace = "Unknown";
-      for (const key in locations) {
-        const loc = locations[key];
-        const dist = getDistance(lat, lon, loc.coords[0], loc.coords[1]);
-        if (dist < 20) nearbyPlace = loc.name;
-      }
+      let aulaDetectada = "Outside classrooms";
+      const point = turf.point([lon, lat]);
+      aulas.forEach(aula => {
+        if (turf.booleanPointInPolygon(point, aula.polygon)) {
+          aulaDetectada = aula.name;
+        }
+      });
 
-      let detectedBuilding = "Outside building";
-      if (geojsonLayer) {
-        geojsonLayer.eachLayer(layer => {
-          const polygon = turf.polygon(layer.feature.geometry.coordinates);
-          const point = turf.point([lon, lat]);
-          if (turf.booleanPointInPolygon(point, polygon)) {
-            detectedBuilding = layer.feature.properties.name || "Building";
-          }
-        });
+      if (heading !== null && heading >= 0) {
+        const compass = document.getElementById("compass");
+        compass.style.transform = `rotate(${heading}deg)`;
       }
 
       const baseAltitude = 320;
@@ -130,19 +178,8 @@
         <strong>Altitude:</strong> ${alt !== null ? alt.toFixed(2) + " m" : "Not available"}<br>
         <strong>GPS Accuracy:</strong> ±${accuracy.toFixed(1)} m<br>
         <strong>Estimated Floor:</strong> ${floor}<br>
-        <strong>Approximate Location:</strong> ${nearbyPlace}<br>
-        <strong>Detected Building:</strong> ${detectedBuilding}</p>
+        <strong>Detected Classroom:</strong> ${aulaDetectada}</p>
       `;
-
-      // Update route if destination is selected
-      const destinationKey = document.getElementById("destination").value;
-      if (destinationKey && routingControl) {
-        const destination = locations[destinationKey];
-        routingControl.setWaypoints([
-          L.latLng(lat, lon),
-          L.latLng(destination.coords[0], destination.coords[1])
-        ]);
-      }
     }
 
     function drawRoute() {
@@ -157,9 +194,9 @@
 
       if (routingControl) {
         map.removeControl(routingControl);
+        document.getElementById("directions").innerHTML = "";
       }
 
-      // ✅ Use OSRM pedestrian profile
       routingControl = L.Routing.control({
         waypoints: [
           L.latLng(userCoords.lat, userCoords.lng),
@@ -175,6 +212,9 @@
           styles: [{ color: 'green', weight: 5 }]
         },
         createMarker: () => null
+      }).on('routesfound', function(e) {
+        const steps = e.routes[0].instructions.map(i => `<li>${i.text}</li>`).join('');
+        document.getElementById("directions").innerHTML = `<strong>Steps:</strong><ol>${steps}</ol>`;
       }).addTo(map);
     }
 
@@ -198,7 +238,6 @@
       return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     }
 
-    // Optional GeoJSON building overlay
     fetch('edificios.geojson')
       .then(res => res.json())
       .then(data => {
