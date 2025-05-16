@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>GPS Test mit Karte</title>
+
+  <!-- Leaflet CSS laden -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+    }
+    #output {
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+    }
+    #map {
+      height: 400px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>GPS-Test mit Karte</h1>
+
+  <button onclick="startGPS()">Standort neu abfragen</button>
+
+  <div id="output">Noch kein Standort ermittelt.</div>
+  <div id="map"></div>
+
+  <!-- Leaflet JS laden -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    let map;
+    let marker = null;
+    let accuracyCircle = null;
+
+    // Karte initialisieren mit grobem Startpunkt
+    function initMap() {
+      map = L.map('map').setView([43.0, 0.0], 13); // beliebiger Startpunkt
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap-Mitwirkende'
+      }).addTo(map);
+    }
+
+    // GPS-Ortung starten
+    function startGPS() {
+      const output = document.getElementById("output");
+
+      if (!navigator.geolocation) {
+        output.textContent = "Geolocation wird nicht unterstützt.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy, altitude } = position.coords;
+
+          output.innerHTML = `
+            <strong>Breitengrad:</strong> ${latitude.toFixed(6)}<br>
+            <strong>Längengrad:</strong> ${longitude.toFixed(6)}<br>
+            <strong>Genauigkeit:</strong> ±${accuracy.toFixed(1)} Meter<br>
+            <strong>Höhe:</strong> ${altitude ? altitude.toFixed(2) + " m" : "Nicht verfügbar"}
+          `;
+
+          // Karte auf aktuelle Position zentrieren
+          map.setView([latitude, longitude], 18);
+
+          // Marker und Kreis setzen oder aktualisieren
+          if (marker) {
+            marker.setLatLng([latitude, longitude]);
+            accuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
+          } else {
+            marker = L.marker([latitude, longitude]).addTo(map).bindPopup("Dein Standort").openPopup();
+            accuracyCircle = L.circle([latitude, longitude], {
+              radius: accuracy,
+              color: 'blue',
+              fillColor: '#cce5ff',
+              fillOpacity: 0.3
+            }).addTo(map);
+          }
+        },
+        (error) => {
+          output.textContent = "Fehler: " + error.message;
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 1000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    window.onload = function() {
+      initMap();
+      startGPS();
+    };
+  </script>
+
+</body>
+</html>
