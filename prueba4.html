@@ -40,12 +40,38 @@
   <button onclick="startTracking()">Start GPS</button>
   <label for="destination">Route to:</label>
   <select id="destination" onchange="drawRoute()">
-    <option value="">Select a place</option>
-    <option value="entrance">Main Entrance</option>
-    <option value="library">Library</option>
-    <option value="cafeteria">Cafeteria</option>
-    <option value="building_c">Building C</option>
-    <option value="gym">Gym</option>
+    <optgroup label="General Facilities">
+        <option value="entrance">Main Entrance</option>
+        <option value="library">Library</option>
+        <option value="cafeteria">Cafeteria</option>
+        <option value="gym">Gym</option>
+      </optgroup>
+      <optgroup label="Academic Buildings">
+        <option value="building_a">Building A</option>
+        <option value="building_b">Building B</option>
+        <option value="building_c">Building C</option>
+        <option value="building_d">Building D</option>
+        <option value="building_i">Building I</option>
+        <option value="building_j">Building J</option>
+        <option value="building_k">Building K</option>
+        <option value="building_m">Building M</option>
+        <option value="building_iufm">I.U.F.M</option>
+        <option value="Département_Génie_Électrique_et_InformatiqueIndustrielle">Department of Electrical Engineering and Industrial Computing</option>
+        <option value="Département_Techniques_de_Commercialisation">Department of Marketing Techniques</option>
+        <option value="Département_Génie_Mécanique_et_Productique">Department of Mechanical Engineering and Production</option>
+        <option value="Département_Gestion_des_Entreprises_et_des_Administrations">Department of Business Management and Administration</option>
+        <option value="Département_Métiers_du_Multimédia_et_de_lInternet">Department of Multimedia and Internet Professions</option>
+        <option value="Département_Génie_Civil_Construction_Durable">Department of Civil Engineering and Sustainable Construction</option>
+        <option value="Résidence_Universitaire_Simone_Veil">Simone Veil University Residence</option>
+        <option value="Observatory_Midi_Pyrenees">Observatory Midi Pyrénées</option>
+      </optgroup>
+      <optgroup label="Laboratories">
+        <option value="laboratory_l0">Laboratory L0</option>
+        <option value="laboratory_l1">Laboratory L1</option>
+        <option value="laboratory_l2">Laboratory L2</option>
+        <option value="laboratory_l3">Laboratory L3</option>
+        <option value="laboratory_l4">Laboratory L4</option>
+      </optgroup>
   </select>
 
   <div id="info"></div>
@@ -82,6 +108,27 @@
       cafeteria:  { name: "Cafeteria", coords: [43.227491, 0.050948] },
       building_c: { name: "Building C", coords: [43.224918, 0.050762] },
       gym:        { name: "Gym", coords: [43.225022, 0.050141] },
+      Observatory_Midi_Pyrenees:        { name: "Observatory Midi Pyrénées", coords: [43.22395259421103, 0.04919962898176636] },
+      building_d:        { name: "Building D", coords: [43.22451071685315, 0.051266802225088226] },
+      building_a:        { name: "Building A", coords: [43.22512116145667, 0.051905355047018285] },
+      building_b:        { name: "Building B", coords: [43.22518766478459, 0.051330345594617556] },
+      laboratory_l0:        { name: "Laboratory  L0", coords: [43.22537407764907, 0.05019617619463004] },
+      laboratory_l1:        { name: "Laboratory  L1", coords: [43.22566310754745, 0.05019939286973189] },
+      laboratory_l2:        { name: "Laboratory  L2", coords: [43.2259452850372, 0.050215499937943955] },
+      laboratory_l3:        { name: "Laboratory  L3", coords: [43.22611465879248, 0.05022916181069032] },
+      laboratory_l4:        { name: "Laboratory  L4", coords: [43.22629480491126, 0.05024612233244814] },
+      building_i:        { name: "Building I", coords: [43.22572237291215, 0.050753058868221845] },
+      building_m:        { name: "Building  M", coords: [43.22398759433532, 0.050027583707324616] },
+      building_k:        { name: "Building  K", coords: [43.226481425092835, 0.05063449559441555] },
+      building_j:        { name: "Building  J", coords: [43.226147885058964, 0.05063024368853868] },
+      Département_Génie_Électrique_et_InformatiqueIndustrielle:        { name: "Département Génie Électrique et Informatique Industrielle", coords: [43.22595248002077, 0.04840867072415946] },
+      Département_Techniques_de_Commercialisation:        { name: "Département Techniques de Commercialisation", coords: [43.22623759497179, 0.0492831363394061] },
+      Département_Génie_Mécanique_et_Productique:        { name: "Département Génie Mécanique et Productique", coords: [43.22657925657124, 0.04774921223801649] },
+      Département_Gestion_des_Entreprises_et_des_Administrations:        { name: "Département Gestion des Entreprises et des Administrations", coords: [43.226726850918126, 0.04931063734750648] },
+      Département_Métiers_du_Multimédia_et_de_lInternet:        { name: "Département Métiers du Multimédia et de l'Internet", coords: [43.227101303489746, 0.04914272874614029] },
+      Département_Génie_Civil_Construction_Durable:        { name: "Département Génie Civil Construction Durable", coords: [43.22619764167101, 0.04759239958245312] },
+      Résidence_Universitaire_Simone_Veil:        { name: "Résidence Universitaire Simone Veil", coords: [43.22741985634936, 0.05017575750369884] },
+
     };
 
     const aulas = [
