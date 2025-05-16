@@ -133,7 +133,7 @@
 
     const aulas = [
       {
-        name: "Classroom A101",
+        name: "Toualet",
         polygon: turf.polygon([[
           [0.050650, 43.224870],
           [0.050670, 43.224870],
@@ -143,7 +143,7 @@
         ]])
       },
       {
-        name: "Classroom B202",
+        name: "Box 3",
         polygon: turf.polygon([[
           [0.050600, 43.224800],
           [0.050620, 43.224800],
@@ -210,7 +210,7 @@
         compass.style.transform = `rotate(${heading}deg)`;
       }
 
-      const baseAltitude = 320;
+      const baseAltitude = 309; 
       let floor = "Unknown";
       if (alt !== null && !isNaN(alt)) {
         const relAlt = alt - baseAltitude;
