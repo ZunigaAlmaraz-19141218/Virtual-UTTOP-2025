@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GPS Test mit Karte</title>
-
-  <!-- Leaflet CSS laden -->
+  <title>Motion Sensor CSV Logger with Markers</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body {
@@ -15,8 +13,9 @@
       padding: 10px 20px;
       font-size: 1rem;
       margin-bottom: 20px;
+      margin-right: 10px;
     }
-    #output {
+    #output, #motion {
       margin-bottom: 20px;
       padding: 10px;
       background-color: #f4f4f4;
@@ -30,60 +29,67 @@
 </head>
 <body>
 
-  <h1>GPS-Test mit Karte</h1>
+  <h1>Motion Sensor CSV Logger with Markers</h1>
 
-  <button onclick="startGPS()">Standort neu abfragen</button>
+  <button onclick="startGPS()">Get GPS Location</button>
+  <button onclick="startRecording()">Start Recording</button>
+  <button onclick="stopRecording()">Stop Recording</button>
 
-  <div id="output">Noch kein Standort ermittelt.</div>
+  <br>
+
+  <button onclick="markPoint('P1')">Mark Point 1</button>
+  <button onclick="markPoint('P2')">Mark Point 2</button>
+  <button onclick="markPoint('P3')">Mark Point 3</button>
+  <button onclick="markPoint('P4')">Mark Point 4</button>
+  <button onclick="markPoint('P5')">Mark Point 5</button>
+
+  <div id="output">No location data received yet.</div>
+  <div id="motion">No motion sensor data received yet.</div>
+  <div id="marker-feedback">No marker set yet.</div>
   <div id="map"></div>
 
-  <!-- Leaflet JS laden -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
-    let map;
-    let marker = null;
-    let accuracyCircle = null;
+    let map, marker = null, accuracyCircle = null;
+    let recording = false;
+    let motionData = [];
+    let listenerActive = false;
+    let lastSampleTime = 0;
+    const minSampleInterval = 100; // in ms → 10 Hz
+    let recordingStartTime = 0;
+    let currentMarker = "";
 
-    // Karte initialisieren mit grobem Startpunkt
     function initMap() {
-      map = L.map('map').setView([43.0, 0.0], 13); // beliebiger Startpunkt
-
+      map = L.map('map').setView([43.0, 0.0], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap-Mitwirkende'
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
     }
 
-    // GPS-Ortung starten
     function startGPS() {
       const output = document.getElementById("output");
-
       if (!navigator.geolocation) {
-        output.textContent = "Geolocation wird nicht unterstützt.";
+        output.textContent = "Geolocation is not supported by this browser.";
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude, accuracy, altitude } = position.coords;
-
           output.innerHTML = `
-            <strong>Breitengrad:</strong> ${latitude.toFixed(6)}<br>
-            <strong>Längengrad:</strong> ${longitude.toFixed(6)}<br>
-            <strong>Genauigkeit:</strong> ±${accuracy.toFixed(1)} Meter<br>
-            <strong>Höhe:</strong> ${altitude ? altitude.toFixed(2) + " m" : "Nicht verfügbar"}
+            <strong>Latitude:</strong> ${latitude.toFixed(6)}<br>
+            <strong>Longitude:</strong> ${longitude.toFixed(6)}<br>
+            <strong>Accuracy:</strong> ±${accuracy.toFixed(1)} meters<br>
+            <strong>Altitude:</strong> ${altitude ? altitude.toFixed(2) + " m" : "Not available"}
           `;
-
-          // Karte auf aktuelle Position zentrieren
           map.setView([latitude, longitude], 18);
-
-          // Marker und Kreis setzen oder aktualisieren
           if (marker) {
             marker.setLatLng([latitude, longitude]);
             accuracyCircle.setLatLng([latitude, longitude]).setRadius(accuracy);
           } else {
-            marker = L.marker([latitude, longitude]).addTo(map).bindPopup("Dein Standort").openPopup();
+            marker = L.marker([latitude, longitude]).addTo(map).bindPopup("Your location").openPopup();
             accuracyCircle = L.circle([latitude, longitude], {
               radius: accuracy,
               color: 'blue',
@@ -93,15 +99,120 @@
           }
         },
         (error) => {
-          output.textContent = "Fehler: " + error.message;
+          output.textContent = "Error: " + error.message;
         },
         {
           enableHighAccuracy: true,
-          timeout: 1000,
+          timeout: 10000,
           maximumAge: 0
         }
       );
     }
+
+    function handleMotion(event) {
+      const now = Date.now();
+      if (now - lastSampleTime < minSampleInterval) return;
+      lastSampleTime = now;
+
+      const acc = event.acceleration || {};
+      const relativeTime = (now - recordingStartTime).toFixed(0);
+
+      document.getElementById("motion").innerHTML = `
+        <strong>Acceleration (no gravity):</strong><br>
+        X: ${acc.x?.toFixed(2) ?? "?"} m/s²<br>
+        Y: ${acc.y?.toFixed(2) ?? "?"} m/s²<br>
+        Z: ${acc.z?.toFixed(2) ?? "?"} m/s²<br><br>
+        <strong>Time:</strong> ${relativeTime} ms since start
+      `;
+
+      if (recording) {
+        motionData.push([
+          relativeTime,
+          acc.x ?? "", acc.y ?? "", acc.z ?? "",
+          currentMarker
+        ]);
+        currentMarker = "";
+      }
+    }
+
+    function startRecording() {
+      const motionOutput = document.getElementById("motion");
+      motionData = [];
+      recording = true;
+      recordingStartTime = Date.now();
+
+      if (listenerActive) {
+        motionOutput.textContent = "Recording started.";
+        return;
+      }
+
+      function enableListener() {
+        window.addEventListener("devicemotion", handleMotion);
+        listenerActive = true;
+        motionOutput.textContent = "Motion sensor activated and recording started.";
+      }
+
+      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === "granted") {
+              enableListener();
+            } else {
+              motionOutput.textContent = "Permission to access motion sensor was denied.";
+              recording = false;
+            }
+          })
+          .catch(err => {
+            motionOutput.textContent = "Error requesting permission: " + err;
+            recording = false;
+          });
+      } else if (typeof DeviceMotionEvent !== "undefined") {
+        enableListener();
+      } else {
+        motionOutput.textContent = "Motion sensor not supported on this device.";
+        recording = false;
+      }
+    }
+
+    function stopRecording() {
+      if (listenerActive) {
+        window.removeEventListener("devicemotion", handleMotion);
+        listenerActive = false;
+      }
+      recording = false;
+      document.getElementById("motion").textContent = "Recording stopped.";
+
+      if (motionData.length > 0) {
+        const csvRows = [
+          "time_ms,acc_x,acc_y,acc_z,marker",
+          ...motionData.map(row => row.join(","))
+        ];
+        const csvBlob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+
+        const now = new Date();
+        const pad = (n) => n.toString().padStart(2, "0");
+        const filename = `motion_recording_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_` +
+                         `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.csv`;
+
+        const url = URL.createObjectURL(csvBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function markPoint(label) {
+       currentMarker = label;
+       const now = Date.now();
+       const relative = recordingStartTime ? (now - recordingStartTime) : 0;
+       document.getElementById("marker-feedback").innerHTML =
+         `Marker <strong>${label}</strong> set at <strong>${relative} ms</strong>`;
+    }     
+
 
     window.onload = function() {
       initMap();
