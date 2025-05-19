@@ -12,10 +12,10 @@
     button {
       padding: 10px 20px;
       font-size: 1rem;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       margin-right: 10px;
     }
-    #output, #motion {
+    #output, #motion, #marker-feedback {
       margin-bottom: 20px;
       padding: 10px;
       background-color: #f4f4f4;
@@ -37,11 +37,18 @@
 
   <br>
 
-  <button onclick="markPoint('P1')">Mark Point 1</button>
-  <button onclick="markPoint('P2')">Mark Point 2</button>
-  <button onclick="markPoint('P3')">Mark Point 3</button>
-  <button onclick="markPoint('P4')">Mark Point 4</button>
-  <button onclick="markPoint('P5')">Mark Point 5</button>
+  <button onclick="markEvent('P1')">Mark Point 1</button>
+  <button onclick="markEvent('P2')">Mark Point 2</button>
+  <button onclick="markEvent('P3')">Mark Point 3</button>
+  <button onclick="markEvent('P4')">Mark Point 4</button>
+  <button onclick="markEvent('P5')">Mark Point 5</button>
+
+  <br>
+
+  <button onclick="markEvent('ROTATION_90_LEFT')">Rotation Left 90°</button>
+  <button onclick="markEvent('ROTATION_90_RIGHT')">Rotation Right 90°</button>
+  <button onclick="markEvent('MOVE_FORWARD')">Move Forward</button>
+  <button onclick="markEvent('MOVE_BACKWARD')">Move Backward</button>
 
   <div id="output">No location data received yet.</div>
   <div id="motion">No motion sensor data received yet.</div>
@@ -56,9 +63,9 @@
     let motionData = [];
     let listenerActive = false;
     let lastSampleTime = 0;
-    const minSampleInterval = 100; // in ms → 10 Hz
+    const minSampleInterval = 100;
     let recordingStartTime = 0;
-    let currentMarker = "";
+    let currentEvent = "";
 
     function initMap() {
       map = L.map('map').setView([43.0, 0.0], 13);
@@ -129,47 +136,42 @@
         motionData.push([
           relativeTime,
           acc.x ?? "", acc.y ?? "", acc.z ?? "",
-          currentMarker
+          currentEvent
         ]);
-        currentMarker = "";
+        currentEvent = "";
       }
     }
 
     function startRecording() {
-      const motionOutput = document.getElementById("motion");
       motionData = [];
       recording = true;
       recordingStartTime = Date.now();
+      document.getElementById("marker-feedback").textContent = "Recording started.";
 
-      if (listenerActive) {
-        motionOutput.textContent = "Recording started.";
-        return;
-      }
+      if (listenerActive) return;
 
       function enableListener() {
         window.addEventListener("devicemotion", handleMotion);
         listenerActive = true;
-        motionOutput.textContent = "Motion sensor activated and recording started.";
       }
 
       if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
         DeviceMotionEvent.requestPermission()
           .then(permissionState => {
-            if (permissionState === "granted") {
-              enableListener();
-            } else {
-              motionOutput.textContent = "Permission to access motion sensor was denied.";
+            if (permissionState === "granted") enableListener();
+            else {
+              document.getElementById("motion").textContent = "Permission denied.";
               recording = false;
             }
           })
           .catch(err => {
-            motionOutput.textContent = "Error requesting permission: " + err;
+            document.getElementById("motion").textContent = "Permission error: " + err;
             recording = false;
           });
       } else if (typeof DeviceMotionEvent !== "undefined") {
         enableListener();
       } else {
-        motionOutput.textContent = "Motion sensor not supported on this device.";
+        document.getElementById("motion").textContent = "Motion sensor not supported.";
         recording = false;
       }
     }
@@ -184,7 +186,7 @@
 
       if (motionData.length > 0) {
         const csvRows = [
-          "time_ms,acc_x,acc_y,acc_z,marker",
+          "time_ms,acc_x,acc_y,acc_z,event",
           ...motionData.map(row => row.join(","))
         ];
         const csvBlob = new Blob([csvRows.join("\n")], { type: "text/csv" });
@@ -205,14 +207,14 @@
       }
     }
 
-    function markPoint(label) {
-       currentMarker = label;
-       const now = Date.now();
-       const relative = recordingStartTime ? (now - recordingStartTime) : 0;
-       document.getElementById("marker-feedback").innerHTML =
-         `Marker <strong>${label}</strong> set at <strong>${relative} ms</strong>`;
-    }     
-
+    function markEvent(label) {
+      if (!recording) return;
+      const now = Date.now();
+      const relative = (now - recordingStartTime);
+      currentEvent = label;
+      document.getElementById("marker-feedback").innerHTML =
+        `Marked <strong>${label}</strong> at <strong>${relative} ms</strong>`;
+    }
 
     window.onload = function() {
       initMap();
