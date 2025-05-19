@@ -4,43 +4,32 @@
   <meta charset="UTF-8">
   <title>ENIT Campus Navigation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <style>
-    #map { height: 500px; margin-top: 20px; position: relative; }
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    button, select { padding: 10px 15px; font-size: 1rem; margin-right: 10px; }
-    .compass-container {
-      position: absolute;
-      top: 80px;
-      right: 20px;
-      width: 80px;
-      height: 80px;
-      z-index: 1000;
-    }
-    .compass {
-      width: 100%;
-      height: 100%;
-      background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Compass_rose_pale.svg/512px-Compass_rose_pale.svg.png');
-      background-size: cover;
-      transform: rotate(0deg);
-      transform-origin: center center;
-    }
-    .directions-box {
-      margin-top: 15px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #f9f9f9;
-    }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f9fa; color: #333; margin:0; }
+    #controls { background: #0055A4; padding: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #fff; }
+    #controls input, #controls select, #controls button { font-size:14px; border: none; border-radius:4px; padding:8px 12px; }
+    #controls button { background: #FFD700; color: #0055A4; cursor: pointer; }
+    #controls button:hover { background: #e6c200; }
+    #controls input { width:200px; }
+    #map2D { height:500px; width:100%; }
+    #info { padding:10px 15px; background:#fff; border-top:1px solid #ddd; font-size:14px; }
+    .directions-box { background: #fff; padding:15px; border:1px solid #ddd; max-height:150px; overflow-y:auto; font-size:14px; }
+    .directions-box ol { margin:0; padding-left:20px; }
+    .directions-box li { margin:6px 0; }
   </style>
 </head>
 <body>
 
-  <h1>ENIT Campus Map</h1>
-  <button onclick="startTracking()">Start GPS</button>
-  <label for="destination">Route to:</label>
-  <select id="destination" onchange="drawRoute()">
-    <optgroup label="General Facilities">
+  <div id="controls">
+    <button onclick="startTracking()">Start GPS</button>
+    <label for="searchBox">Search building:</label>
+    <input type="text" id="searchBox" placeholder="Filter..." oninput="filterList()" />
+    <label for="destination">Route to:</label>
+    <select id="destination" onchange="drawRoute()">
+      <optgroup label="General Facilities">
         <option value="entrance">Main Entrance</option>
         <option value="library">Library</option>
         <option value="cafeteria">Cafeteria</option>
@@ -56,14 +45,16 @@
         <option value="building_k">Building K</option>
         <option value="building_m">Building M</option>
         <option value="building_iufm">I.U.F.M</option>
-        <option value="Département_Génie_Électrique_et_InformatiqueIndustrielle">Department of Electrical Engineering and Industrial Computing</option>
-        <option value="Département_Techniques_de_Commercialisation">Department of Marketing Techniques</option>
-        <option value="Département_Génie_Mécanique_et_Productique">Department of Mechanical Engineering and Production</option>
-        <option value="Département_Gestion_des_Entreprises_et_des_Administrations">Department of Business Management and Administration</option>
-        <option value="Département_Métiers_du_Multimédia_et_de_lInternet">Department of Multimedia and Internet Professions</option>
-        <option value="Département_Génie_Civil_Construction_Durable">Department of Civil Engineering and Sustainable Construction</option>
-        <option value="Résidence_Universitaire_Simone_Veil">Simone Veil University Residence</option>
         <option value="Observatory_Midi_Pyrenees">Observatory Midi Pyrénées</option>
+      </optgroup>
+      <optgroup label="Departments & Residence">
+        <option value="Département_Génie_Électrique_et_InformatiqueIndustrielle">Dept. Electrical & Industrial Computing</option>
+        <option value="Département_Techniques_de_Commercialisation">Dept. Marketing Techniques</option>
+        <option value="Département_Génie_Mécanique_et_Productique">Dept. Mechanical Eng. & Production</option>
+        <option value="Département_Gestion_des_Entreprises_et_des_Administrations">Dept. Business & Admin</option>
+        <option value="Département_Métiers_du_Multimédia_et_de_lInternet">Dept. Multimedia & Internet</option>
+        <option value="Département_Génie_Civil_Construction_Durable">Dept. Civil Eng. & Sust. Construction</option>
+        <option value="Résidence_Universitaire_Simone_Veil">Simone Veil Residence</option>
       </optgroup>
       <optgroup label="Laboratories">
         <option value="laboratory_l0">Laboratory L0</option>
@@ -72,13 +63,11 @@
         <option value="laboratory_l3">Laboratory L3</option>
         <option value="laboratory_l4">Laboratory L4</option>
       </optgroup>
-  </select>
-
-  <div id="info"></div>
-  <div id="map"></div>
-  <div class="compass-container">
-    <div class="compass" id="compass"></div>
+    </select>
   </div>
+
+  <div id="map2D"></div>
+  <div id="info"></div>
   <div id="directions" class="directions-box"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -86,225 +75,63 @@
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <script>
-    const enitCoords = [43.22476, 0.05044];
-    const map = L.map('map').setView(enitCoords, 18);
+    // Campus bounds & map init
+    const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
+    const map2D = L.map('map2D',{center:[43.22476,0.05044],zoom:18,minZoom:17,maxZoom:20,maxBounds:campusBounds});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:20}).addTo(map2D);
 
-    const bounds = L.latLngBounds([
-      [43.2235, 0.0459],
-      [43.2280, 0.0536]
-    ]);
-    map.setMaxBounds(bounds);
-    map.options.minZoom = 17;
-    map.options.maxZoom = 20;
+    const campusPoly = turf.polygon([[[0.0459,43.2235],[0.0536,43.2235],[0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]]]);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 20,
-    }).addTo(map);
-
+    // Locations list
     const locations = {
-      entrance:   { name: "Main Entrance", coords: [43.225018, 0.052059] },
-      library:    { name: "Library", coords: [43.224945, 0.051151] },
-      cafeteria:  { name: "Cafeteria", coords: [43.227491, 0.050948] },
-      building_c: { name: "Building C", coords: [43.224918, 0.050762] },
-      gym:        { name: "Gym", coords: [43.225022, 0.050141] },
-      Observatory_Midi_Pyrenees:        { name: "Observatory Midi Pyrénées", coords: [43.22395259421103, 0.04919962898176636] },
-      building_d:        { name: "Building D", coords: [43.22451071685315, 0.051266802225088226] },
-      building_a:        { name: "Building A", coords: [43.22512116145667, 0.051905355047018285] },
-      building_b:        { name: "Building B", coords: [43.22518766478459, 0.051330345594617556] },
-      laboratory_l0:        { name: "Laboratory  L0", coords: [43.22537407764907, 0.05019617619463004] },
-      laboratory_l1:        { name: "Laboratory  L1", coords: [43.22566310754745, 0.05019939286973189] },
-      laboratory_l2:        { name: "Laboratory  L2", coords: [43.2259452850372, 0.050215499937943955] },
-      laboratory_l3:        { name: "Laboratory  L3", coords: [43.22611465879248, 0.05022916181069032] },
-      laboratory_l4:        { name: "Laboratory  L4", coords: [43.22629480491126, 0.05024612233244814] },
-      building_i:        { name: "Building I", coords: [43.22572237291215, 0.050753058868221845] },
-      building_m:        { name: "Building  M", coords: [43.22398759433532, 0.050027583707324616] },
-      building_k:        { name: "Building  K", coords: [43.226481425092835, 0.05063449559441555] },
-      building_j:        { name: "Building  J", coords: [43.226147885058964, 0.05063024368853868] },
-      Département_Génie_Électrique_et_InformatiqueIndustrielle:        { name: "Département Génie Électrique et Informatique Industrielle", coords: [43.22595248002077, 0.04840867072415946] },
-      Département_Techniques_de_Commercialisation:        { name: "Département Techniques de Commercialisation", coords: [43.22623759497179, 0.0492831363394061] },
-      Département_Génie_Mécanique_et_Productique:        { name: "Département Génie Mécanique et Productique", coords: [43.22657925657124, 0.04774921223801649] },
-      Département_Gestion_des_Entreprises_et_des_Administrations:        { name: "Département Gestion des Entreprises et des Administrations", coords: [43.226726850918126, 0.04931063734750648] },
-      Département_Métiers_du_Multimédia_et_de_lInternet:        { name: "Département Métiers du Multimédia et de l'Internet", coords: [43.227101303489746, 0.04914272874614029] },
-      Département_Génie_Civil_Construction_Durable:        { name: "Département Génie Civil Construction Durable", coords: [43.22619764167101, 0.04759239958245312] },
-      Résidence_Universitaire_Simone_Veil:        { name: "Résidence Universitaire Simone Veil", coords: [43.22741985634936, 0.05017575750369884] },
-
+      entrance:[43.225018,0.052059], library:[43.224945,0.051151], cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
+      building_a:[43.225121,0.051905], building_b:[43.225188,0.051330], building_c:[43.224918,0.050762], building_d:[43.224511,0.051267],
+      building_i:[43.225722,0.050753], building_j:[43.226148,0.050630], building_k:[43.226481,0.050634], building_m:[43.223988,0.050028],
+      building_iufm:[43.224808,0.049464], Observatory_Midi_Pyrenees:[43.223953,0.049200],
+      Département_Génie_Électrique_et_InformatiqueIndustrielle:[43.225952,0.048409], Département_Techniques_de_Commercialisation:[43.226238,0.049283],
+      Département_Génie_Mécanique_et_Productique:[43.226579,0.047749], Département_Gestion_des_Entreprises_et_des_Administrations:[43.226727,0.049311],
+      Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143], Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
+      Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],
+      laboratory_l0:[43.225374,0.050196], laboratory_l1:[43.225663,0.050199], laboratory_l2:[43.225945,0.050215],
+      laboratory_l3:[43.226115,0.050229], laboratory_l4:[43.226295,0.050246]
     };
 
-    const aulas = [
-      {
-        name: "Toualet",
-        polygon: turf.polygon([[
-          [0.050650, 43.224870],
-          [0.050670, 43.224870],
-          [0.050670, 43.224890],
-          [0.050650, 43.224890],
-          [0.050650, 43.224870]
-        ]])
-      },
-      {
-        name: "Box 3",
-        polygon: turf.polygon([[
-          [0.050600, 43.224800],
-          [0.050620, 43.224800],
-          [0.050620, 43.224820],
-          [0.050600, 43.224820],
-          [0.050600, 43.224800]
-        ]])
-      }
-    ];
+    let marker, routingControl, watchId;
 
-    let marker, accuracyCircle, geojsonLayer, watchId = null;
-    let routingControl = null;
-
-    function startTracking() {
-      if (!navigator.geolocation) {
-        document.getElementById("info").innerHTML = "Geolocation not supported.";
-        return;
-      }
-      if (navigator.permissions) {
-        navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
-          if (result.state === 'denied') {
-            alert("Please enable GPS/location permission in your browser settings.");
-          }
-        });
-      }
-      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-
-      watchId = navigator.geolocation.watchPosition(showPosition, showError, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      });
+    function startTracking(){
+      if(!navigator.geolocation) return alert('Geolocation not supported');
+      navigator.geolocation.getCurrentPosition(()=>{},e=>alert('Allow location access'),{timeout:10000});
+      if(watchId) navigator.geolocation.clearWatch(watchId);
+      watchId = navigator.geolocation.watchPosition(p=>{
+        const {latitude:lat,longitude:lon,accuracy} = p.coords;
+        if(!marker) marker = L.marker([lat,lon]).addTo(map2D).bindPopup('You are here').openPopup();
+        else marker.setLatLng([lat,lon]);
+        document.getElementById('info').innerHTML = `Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Acc: ±${accuracy.toFixed(1)} m`;
+      }, e=>document.getElementById('info').textContent=`Error: ${e.message}`,
+      {enableHighAccuracy:true,timeout:5000,maximumAge:0});
     }
 
-    function showPosition(position) {
-      const { latitude: lat, longitude: lon, altitude: alt, accuracy, heading } = position.coords;
-      const visualAccuracy = Math.min(accuracy, 30);
-
-      if (marker) {
-        marker.setLatLng([lat, lon]);
-        accuracyCircle.setLatLng([lat, lon]).setRadius(visualAccuracy);
-      } else {
-        marker = L.marker([lat, lon]).addTo(map).bindPopup("You are here").openPopup();
-        accuracyCircle = L.circle([lat, lon], {
-          radius: visualAccuracy,
-          color: "blue",
-          fillColor: "#cce5ff",
-          fillOpacity: 0.3
-        }).addTo(map);
-      }
-
-      map.setView([lat, lon], 19);
-
-      let aulaDetectada = "Outside classrooms";
-      const point = turf.point([lon, lat]);
-      aulas.forEach(aula => {
-        if (turf.booleanPointInPolygon(point, aula.polygon)) {
-          aulaDetectada = aula.name;
-        }
-      });
-
-      if (heading !== null && heading >= 0) {
-        const compass = document.getElementById("compass");
-        compass.style.transform = `rotate(${heading}deg)`;
-      }
-
-      const baseAltitude = 309; 
-      let floor = "Unknown";
-      if (alt !== null && !isNaN(alt)) {
-        const relAlt = alt - baseAltitude;
-        floor = relAlt < 2 ? "Ground floor" :
-                relAlt < 5 ? "First floor" :
-                relAlt < 8 ? "Second floor" : "Upper floor";
-      }
-
-      document.getElementById("info").innerHTML = `
-        <p><strong>Latitude:</strong> ${lat.toFixed(6)}<br>
-        <strong>Longitude:</strong> ${lon.toFixed(6)}<br>
-        <strong>Altitude:</strong> ${alt !== null ? alt.toFixed(2) + " m" : "Not available"}<br>
-        <strong>GPS Accuracy:</strong> ±${accuracy.toFixed(1)} m<br>
-        <strong>Estimated Floor:</strong> ${floor}<br>
-        <strong>Detected Classroom:</strong> ${aulaDetectada}</p>
-      `;
+    function filterList(){
+      const f = document.getElementById('searchBox').value.toLowerCase();
+      Array.from(document.getElementById('destination').options).forEach(o=>o.style.display=o.text.toLowerCase().includes(f)?'block':'none');
     }
-
-    function drawRoute() {
-      const destinationKey = document.getElementById("destination").value;
-      if (!destinationKey || !marker) {
-        alert("Please start GPS and select a destination.");
-        return;
-      }
-
-      const destination = locations[destinationKey];
-      const userCoords = marker.getLatLng();
-
-      if (routingControl) {
-        map.removeControl(routingControl);
-        document.getElementById("directions").innerHTML = "";
-      }
-
+    
+    function drawRoute(){
+      const key = document.getElementById('destination').value;
+      if(!key||!marker) return alert('Start GPS & select destination');
+      if(routingControl) map2D.removeControl(routingControl);
       routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(userCoords.lat, userCoords.lng),
-          L.latLng(destination.coords[0], destination.coords[1])
-        ],
-        router: L.Routing.osrmv1({
-          serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
-        }),
-        routeWhileDragging: false,
-        show: false,
-        addWaypoints: false,
-        lineOptions: {
-          styles: [{ color: 'green', weight: 5 }]
-        },
-        createMarker: () => null
-      }).on('routesfound', function(e) {
-        const steps = e.routes[0].instructions.map(i => `<li>${i.text}</li>`).join('');
-        document.getElementById("directions").innerHTML = `<strong>Steps:</strong><ol>${steps}</ol>`;
-      }).addTo(map);
+        router: L.Routing.osrmv1({serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1',profile:'foot'}),
+        waypoints:[marker.getLatLng(),L.latLng(...locations[key])],
+        fitSelectedRoutes:true,show:false,routeWhileDragging:false,addWaypoints:false,createMarker:()=>null,
+        lineOptions:{styles:[{color:'#0055A4',weight:5}]}
+      }).on('routesfound',e=>{
+        const route = e.routes[0];
+        if(route.coordinates.some(pt=>!turf.booleanPointInPolygon(turf.point([pt.lng,pt.lat]),campusPoly))) return alert('Route exits campus');
+        const steps = route.instructions.map(i=>`<li>${i.text}</li>`).join('');
+        document.getElementById('directions').innerHTML = `<h3>Steps</h3><ol>${steps}</ol>`;
+      }).on('routingerror',e=>alert('Routing error: '+(e.error?.message||e.message))).addTo(map2D);
     }
-
-    function showError(error) {
-      const errors = {
-        1: "Permission denied.",
-        2: "Position unavailable.",
-        3: "Timeout expired.",
-      };
-      document.getElementById("info").innerHTML = `<p>Error: ${errors[error.code] || "Unknown error."}</p>`;
-    }
-
-    function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = x => x * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) ** 2;
-      return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-    }
-
-    fetch('edificios.geojson')
-      .then(res => res.json())
-      .then(data => {
-        geojsonLayer = L.geoJSON(data, {
-          onEachFeature: (feature, layer) => {
-            const name = feature.properties.name || "Building";
-            layer.bindPopup(name);
-          },
-          pointToLayer: (feature, latlng) => {
-            return L.circleMarker(latlng, {
-              radius: 6,
-              color: "#007bff",
-              fillOpacity: 0.6
-            });
-          }
-        }).addTo(map);
-      })
-      .catch(error => {
-        console.error("Error loading GeoJSON:", error);
-      });
   </script>
 </body>
 </html>
