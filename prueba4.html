@@ -231,7 +231,7 @@
             turf.lineString(routeCoords),
             { units:'meters' }
           );
-          if(dist > 15) {
+          if(dist > 20) {
             showBanner('Off-route, recalculating…');
             drawRoute();
           }
