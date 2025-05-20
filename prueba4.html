@@ -214,8 +214,8 @@
         // update info panel
         let floor = 'Unknown';
         if(alt != null) {
-          const d = alt - 319;
-          floor = d<4?'Ground':d<6?'First':'Upper';
+          const d = alt - 312;
+          floor = d<2?'Ground':d<4?'First':'Upper';
         }
         document.getElementById('info').innerHTML = `
           <strong>Lat:</strong> ${lat.toFixed(6)}<br>
