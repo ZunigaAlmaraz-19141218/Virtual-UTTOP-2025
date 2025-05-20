@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Motion Recorder (Mobile)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .button-group, .label-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .label-buttons {
+      margin-top: 80px; /* Tiefer gesetzt */
+    }
+
+    button {
+      flex: 1 1 100%;
+      min-height: 120px;               /* Viel größer */
+      padding: 25px;
+      font-size: 2rem;                 /* Größere Schrift */
+      border: none;
+      border-radius: 12px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button.active-label {
+      background-color: #28a745 !important;
+    }
+
+    #motion, #status, #download {
+      margin: 20px 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1.1rem;
+    }
+
+    h1, h3 {
+      text-align: center;
+    }
+
+    a {
+      display: inline-block;
+      padding: 15px 20px;
+      background-color: #28a745;
+      color: white;
+      border-radius: 5px;
+      text-decoration: none;
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+
+    a:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Motion Recorder</h1>
+
+<div class="button-group">
+  <button onclick="startRecording()">▶ Start Recording</button>
+  <button onclick="stopRecording()">⏹ Stop Recording</button>
+</div>
+
+<h3>Hold to Label Movement</h3>
+<div class="label-buttons">
+  <button id="btn-left" onmousedown="setLabel('left', this)" onmouseup="clearLabel()" ontouchstart="setLabel('left', this)" ontouchend="clearLabel()">← Left</button>
+  <button id="btn-right" onmousedown="setLabel('right', this)" onmouseup="clearLabel()" ontouchstart="setLabel('right', this)" ontouchend="clearLabel()">→ Right</button>
+  <button id="btn-forward" onmousedown="setLabel('forward', this)" onmouseup="clearLabel()" ontouchstart="setLabel('forward', this)" ontouchend="clearLabel()">↑ Forward</button>
+  <button id="btn-backward" onmousedown="setLabel('backward', this)" onmouseup="clearLabel()" ontouchstart="setLabel('backward', this)" ontouchend="clearLabel()">↓ Backward</button>
+  <button id="btn-stairs-up" onmousedown="setLabel('stairs_up', this)" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_up', this)" ontouchend="clearLabel()">Stairs ↑</button>
+  <button id="btn-stairs-down" onmousedown="setLabel('stairs_down', this)" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_down', this)" ontouchend="clearLabel()">Stairs ↓</button>
+  <button id="btn-wait" onmousedown="setLabel('wait', this)" onmouseup="clearLabel()" ontouchstart="setLabel('wait', this)" ontouchend="clearLabel()">⏳ Wait</button>
+</div>
+
+<div id="motion">Motion data will appear here.</div>
+<div id="status">Not recording.</div>
+<div id="download"></div>
+
+<script>
+  let recording = false;
+  let motionData = [];
+  let listenerActive = false;
+  let lastSampleTime = 0;
+  const minSampleInterval = 100;
+  let recordingStartTime = 0;
+  let currentLabel = "";
+  let currentButton = null;
+
+  function handleMotion(event) {
+    const now = Date.now();
+    if (now - lastSampleTime < minSampleInterval) return;
+    lastSampleTime = now;
+
+    const acc = event.acceleration || {};
+    const rot = event.rotationRate || {};
+    const relativeTime = now - recordingStartTime;
+
+    document.getElementById("motion").innerHTML = `
+      <strong>Acceleration:</strong> x: ${acc.x?.toFixed(2) ?? "?"} |
+      y: ${acc.y?.toFixed(2) ?? "?"} |
+      z: ${acc.z?.toFixed(2) ?? "?"}<br>
+      <strong>Rotation:</strong> α: ${rot.alpha?.toFixed(2) ?? "?"} |
+      β: ${rot.beta?.toFixed(2) ?? "?"} |
+      γ: ${rot.gamma?.toFixed(2) ?? "?"}<br>
+      <strong>Label:</strong> ${currentLabel || "none"}<br>
+      <strong>Time:</strong> ${relativeTime} ms
+    `;
+
+    if (recording) {
+      motionData.push([
+        relativeTime,
+        acc.x ?? "", acc.y ?? "", acc.z ?? "",
+        rot.alpha ?? "", rot.beta ?? "", rot.gamma ?? "",
+        currentLabel
+      ]);
+    }
+  }
+
+  function startRecording() {
+    motionData = [];
+    recording = true;
+    recordingStartTime = Date.now();
+    document.getElementById("status").textContent = "Recording...";
+
+    if (listenerActive) return;
+
+    function enableListener() {
+      window.addEventListener("devicemotion", handleMotion);
+      listenerActive = true;
+      document.getElementById("status").textContent += " (motion listener active)";
+    }
+
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission()
+        .then(permission => {
+          if (permission === "granted") enableListener();
+          else {
+            document.getElementById("motion").textContent = "Permission denied.";
+            recording = false;
+          }
+        }).catch(err => {
+          document.getElementById("motion").textContent = "Permission error: " + err;
+          recording = false;
+        });
+    } else if (typeof DeviceMotionEvent !== "undefined") {
+      enableListener();
+    } else {
+      document.getElementById("motion").textContent = "Motion sensor not supported.";
+      recording = false;
+    }
+  }
+
+  function stopRecording() {
+    if (listenerActive) {
+      window.removeEventListener("devicemotion", handleMotion);
+      listenerActive = false;
+    }
+    recording = false;
+    document.getElementById("status").textContent = "Recording stopped.";
+
+    if (motionData.length > 0) {
+      const csvRows = [
+        "time_ms,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,label",
+        ...motionData.map(row => row.join(","))
+      ];
+      const csvBlob = new Blob([csvRows.join("\n")], { type: "text/csv" });
+
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, "0");
+      const filename = `motion_recording_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_` +
+                       `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.csv`;
+
+      const url = URL.createObjectURL(csvBlob);
+      document.getElementById("download").innerHTML = `
+        <a href="${url}" download="${filename}">⬇️ Download CSV: ${filename}</a>
+      `;
+    } else {
+      document.getElementById("download").innerHTML = "No data recorded.";
+    }
+  }
+
+  function setLabel(label, button) {
+    currentLabel = label;
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    if (currentButton) currentButton.classList.remove("active-label");
+    button.classList.add("active-label");
+    currentButton = button;
+  }
+
+  function clearLabel() {
+    currentLabel = "";
+    if (currentButton) currentButton.classList.remove("active-label");
+    currentButton = null;
+  }
+</script>
+
+</body>
+</html>
