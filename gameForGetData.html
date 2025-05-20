@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Motion Recorder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    input {
+      font-size: 1.2rem;
+      padding: 10px;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 20px;
+      font-size: 1.5rem;
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      background-color: #007bff;
+      color: white;
+      margin-top: 10px;
+    }
+
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+
+    #motion, #status {
+      background-color: #f4f4f4;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 1rem;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    [id^="instruction-"] {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+
+    #progressContainer {
+      width: 100%;
+      height: 20px;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    #progressBar {
+      width: 0%;
+      height: 100%;
+      background-color: #28a745;
+      transition: width linear;
+    }
+  </style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div id="instruction-setup">Beispiel 1: Bitte gib deinen Namen und dein Handy ein</div>
+  <h2>Motion Recorder Setup</h2>
+  <input id="name" placeholder="Enter your name">
+  <input id="device" placeholder="Enter phone model">
+  <button onclick="startExperiment()">OK</button>
+</div>
+
+<!-- EXPERIMENT -->
+<div id="experiment" style="display:none;">
+  <div id="instruction-experiment">Beispiel 2: Starte die Bewegung wie angezeigt</div>
+  <h2 id="stepTitle"></h2>
+  <div class="counter" id="counterDisplay"></div>
+  <div id="status">Ready.</div>
+  <div id="progressContainer"><div id="progressBar"></div></div>
+  <div id="motion">Waiting for data...</div>
+  <button id="nextButton" onclick="startMeasurement()">Start Measurement</button>
+</div>
+
+<!-- DONE -->
+<div id="done" style="display:none;">
+  <div id="instruction-done">Beispiel 3: CSV-Datei herunterladen</div>
+  <h2>Recording complete</h2>
+  <button onclick="downloadCSV()">⬇ Download CSV</button>
+</div>
+
+<script>
+  const measurementDuration = 100; // Dauer in ms
+
+  let steps = [
+    { label: "wait", count: 1 },
+    { label: "left", count: 10 },
+    { label: "wait", count: 1 },
+    { label: "right", count: 10 },
+    { label: "wait", count: 1 },
+    { label: "forward", count: 10 },
+    { label: "wait", count: 1 },
+    { label: "backward", count: 10 },
+    { label: "wait", count: 1 },
+    { label: "stairs_up", count: 10 },
+    { label: "wait", count: 1 },
+    { label: "stairs_down", count: 10 },
+    { label: "wait", count: 3 },
+  ];
+
+  let userName = "";
+  let userDevice = "";
+  let currentStep = 0;
+  let repetition = 0;
+  let motionData = [];
+  let recording = false;
+  let recordingStartTime = 0;
+  let lastSampleTime = 0;
+  const minSampleInterval = 100;
+
+  function startExperiment() {
+    userName = document.getElementById("name").value.trim();
+    userDevice = document.getElementById("device").value.trim();
+
+    if (!userName || !userDevice) {
+      alert("Please enter your name and device.");
+      return;
+    }
+
+    document.getElementById("setup").style.display = "none";
+    document.getElementById("experiment").style.display = "block";
+
+    enableMotionListener();
+    updateStepDisplay();
+  }
+
+  function enableMotionListener() {
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+      DeviceMotionEvent.requestPermission()
+        .then(permission => {
+          if (permission === "granted") {
+            window.addEventListener("devicemotion", handleMotion);
+          } else {
+            alert("Motion permission denied.");
+          }
+        }).catch(alert);
+    } else {
+      window.addEventListener("devicemotion", handleMotion);
+    }
+  }
+
+  function handleMotion(event) {
+    const now = Date.now();
+    if (!recording || now - lastSampleTime < minSampleInterval) return;
+    lastSampleTime = now;
+
+    const acc = event.acceleration || {};
+    const rot = event.rotationRate || {};
+    const time = now - recordingStartTime;
+
+    motionData.push([
+      time,
+      acc.x ?? "", acc.y ?? "", acc.z ?? "",
+      rot.alpha ?? "", rot.beta ?? "", rot.gamma ?? "",
+      steps[currentStep].label,
+      `${steps[currentStep].label}_${repetition + 1}`
+    ]);
+
+    document.getElementById("motion").innerHTML = `
+      Acc: x=${acc.x?.toFixed(2) ?? "?"}, y=${acc.y?.toFixed(2) ?? "?"}, z=${acc.z?.toFixed(2) ?? "?"} |
+      Rot: α=${rot.alpha?.toFixed(2) ?? "?"}, β=${rot.beta?.toFixed(2) ?? "?"}, γ=${rot.gamma?.toFixed(2) ?? "?"}
+    `;
+  }
+
+  function updateStepDisplay() {
+    const step = steps[currentStep];
+    document.getElementById("stepTitle").textContent = `Perform: ${step.label}`;
+    document.getElementById("counterDisplay").textContent = `${repetition + 1} / ${step.count}`;
+    document.getElementById("status").textContent = "Press start for next segment.";
+    document.getElementById("progressBar").style.width = "0%";
+  }
+
+  function startMeasurement() {
+    const btn = document.getElementById("nextButton");
+    const progress = document.getElementById("progressBar");
+
+    btn.disabled = true;
+    btn.style.backgroundColor = "#28a745";
+    recording = true;
+    recordingStartTime = Date.now();
+    document.getElementById("status").textContent = "Recording...";
+
+    // Animate progress bar
+    progress.style.transition = "none";
+    progress.style.width = "0%";
+    void progress.offsetWidth; // force reflow
+    progress.style.transition = `width ${measurementDuration}ms linear`;
+    progress.style.width = "100%";
+
+    setTimeout(() => {
+      recording = false;
+      document.getElementById("status").textContent = "Done.";
+      btn.disabled = false;
+      btn.style.backgroundColor = "#007bff";
+
+      progress.style.transition = "none";
+      progress.style.width = "0%";
+
+      repetition++;
+      if (repetition >= steps[currentStep].count) {
+        repetition = 0;
+        currentStep++;
+        if (currentStep >= steps.length) {
+          document.getElementById("experiment").style.display = "none";
+          document.getElementById("done").style.display = "block";
+          return;
+        }
+      }
+
+      updateStepDisplay();
+    }, measurementDuration);
+  }
+
+  function downloadCSV() {
+    const safeName = userName.replace(/\s+/g, "_").toLowerCase();
+    const safeDevice = userDevice.replace(/\s+/g, "_").toLowerCase();
+    const filename = `motion_${safeName}_${safeDevice}.csv`;
+
+    const csv = [
+      "time_ms,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,label,segment_id",
+      ...motionData.map(row => row.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>
