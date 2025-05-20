@@ -4,31 +4,55 @@
   <meta charset="UTF-8">
   <title>ENIT Campus Navigation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Leaflet -->
+  <!-- Leaflet & Routing CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <style>
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f9fa; color: #333; margin:0; }
-    #controls { background: #0055A4; padding: 15px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #fff; }
-    #controls input, #controls select, #controls button { font-size:14px; border: none; border-radius:4px; padding:8px 12px; }
-    #controls button { background: #FFD700; color: #0055A4; cursor: pointer; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f9fa; color: #333; }
+    #controls {
+      background: #0055A4; padding: 15px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      color: #fff;
+    }
+    #controls input, #controls select, #controls button {
+      font-size:14px; border: none; border-radius:4px; padding:8px 12px;
+    }
+    #controls button {
+      background: #FFD700; color: #0055A4; cursor: pointer;
+    }
     #controls button:hover { background: #e6c200; }
     #controls input { width:200px; }
-    #map2D { height:500px; width:100%; }
-    #info { padding:10px 15px; background:#fff; border-top:1px solid #ddd; font-size:14px; }
-    .directions-box { background: #fff; padding:15px; border:1px solid #ddd; max-height:150px; overflow-y:auto; font-size:14px; }
+    #map2D { height:500px; width:100%; border-top:1px solid #ddd; border-bottom:1px solid #ddd; }
+    #errorBanner {
+      display:none; background:#f8d7da; color:#721c24;
+      padding:8px; font-size:14px; text-align:center;
+    }
+    #info {
+      padding:10px 15px; background:#fff; border-top:1px solid #ddd;
+      font-size:14px; position: relative;
+    }
+    .directions-box {
+      background: #fff; padding:15px; border:1px solid #ddd;
+      border-top:none; max-height:150px; overflow-y:auto; font-size:14px;
+    }
+    .directions-box h3 { margin-top:0; }
     .directions-box ol { margin:0; padding-left:20px; }
     .directions-box li { margin:6px 0; }
+    @media(max-width:768px){
+      #controls { flex-direction:column; align-items:stretch; }
+      #controls input { width:100%; }
+    }
   </style>
 </head>
 <body>
 
-  <div id="controls">
-    <button onclick="startTracking()">Start GPS</button>
+  <div id="controls" role="banner">
+    <button aria-label="Start GPS tracking" onclick="startTracking()">Start GPS</button>
     <label for="searchBox">Search building:</label>
-    <input type="text" id="searchBox" placeholder="Filter..." oninput="filterList()" />
+    <input id="searchBox" placeholder="Filter..." oninput="filterList()" aria-label="Filter buildings" />
     <label for="destination">Route to:</label>
-    <select id="destination" onchange="drawRoute()">
+    <select id="destination" onchange="drawRoute()" aria-label="Select destination">
       <optgroup label="General Facilities">
         <option value="entrance">Main Entrance</option>
         <option value="library">Library</option>
@@ -66,71 +90,148 @@
     </select>
   </div>
 
-  <div id="map2D"></div>
-  <div id="info"></div>
-  <div id="directions" class="directions-box"></div>
+  <div id="errorBanner" role="alert"></div>
+  <div id="map2D" role="region" aria-label="Campus Map"></div>
+  <div id="info" role="status"></div>
+  <div id="directions" class="directions-box" role="region" aria-live="polite"></div>
 
+  <!-- JS Libraries -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <script>
-    // Campus bounds & map init
+    // Helper: show an inline banner
+    function showBanner(msg) {
+      const b = document.getElementById('errorBanner');
+      b.textContent = msg; b.style.display = 'block';
+      setTimeout(()=> b.style.display='none', 5000);
+    }
+
+    // Campus bounds & polygon
     const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
-    const map2D = L.map('map2D',{center:[43.22476,0.05044],zoom:18,minZoom:17,maxZoom:20,maxBounds:campusBounds});
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:20}).addTo(map2D);
+    const campusPoly = turf.polygon([[
+      [0.0459,43.2235],[0.0536,43.2235],[0.0536,43.2280],
+      [0.0459,43.2280],[0.0459,43.2235]
+    ]]);
 
-    const campusPoly = turf.polygon([[[0.0459,43.2235],[0.0536,43.2235],[0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]]]);
+    // Initialize map
+    const map2D = L.map('map2D',{
+      center:[43.22476,0.05044], zoom:18,
+      minZoom:17, maxZoom:20, maxBounds:campusBounds
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap', maxZoom:20
+    }).addTo(map2D);
 
-    // Locations list
+    // Destinations
     const locations = {
-      entrance:[43.225018,0.052059], library:[43.224945,0.051151], cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
-      building_a:[43.225121,0.051905], building_b:[43.225188,0.051330], building_c:[43.224918,0.050762], building_d:[43.224511,0.051267],
-      building_i:[43.225722,0.050753], building_j:[43.226148,0.050630], building_k:[43.226481,0.050634], building_m:[43.223988,0.050028],
+      entrance:[43.225018,0.052059], library:[43.224945,0.051151],
+      cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
+      building_a:[43.225121,0.051905], building_b:[43.225188,0.051330],
+      building_c:[43.224918,0.050762], building_d:[43.224511,0.051267],
+      building_i:[43.225722,0.050753], building_j:[43.226148,0.050630],
+      building_k:[43.226481,0.050634], building_m:[43.223988,0.050028],
       building_iufm:[43.224808,0.049464], Observatory_Midi_Pyrenees:[43.223953,0.049200],
-      Département_Génie_Électrique_et_InformatiqueIndustrielle:[43.225952,0.048409], Département_Techniques_de_Commercialisation:[43.226238,0.049283],
-      Département_Génie_Mécanique_et_Productique:[43.226579,0.047749], Département_Gestion_des_Entreprises_et_des_Administrations:[43.226727,0.049311],
-      Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143], Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
+      Département_Génie_Électrique_et_InformatiqueIndustrielle:[43.225952,0.048409],
+      Département_Techniques_de_Commercialisation:[43.226238,0.049283],
+      Département_Génie_Mécanique_et_Productique:[43.226579,0.047749],
+      Département_Gestion_des_Entreprises_et_des_Administrations:[43.226727,0.049311],
+      Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143],
+      Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
       Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],
-      laboratory_l0:[43.225374,0.050196], laboratory_l1:[43.225663,0.050199], laboratory_l2:[43.225945,0.050215],
-      laboratory_l3:[43.226115,0.050229], laboratory_l4:[43.226295,0.050246]
+      laboratory_l0:[43.225374,0.050196], laboratory_l1:[43.225663,0.050199],
+      laboratory_l2:[43.225945,0.050215], laboratory_l3:[43.226115,0.050229],
+      laboratory_l4:[43.226295,0.050246]
     };
 
-    let marker, routingControl, watchId;
+    let marker, routingControl, watchId, routeCoords;
 
+    // Start GPS & display info
     function startTracking(){
-      if(!navigator.geolocation) return alert('Geolocation not supported');
-      navigator.geolocation.getCurrentPosition(()=>{},e=>alert('Allow location access'),{timeout:10000});
+      if(!navigator.geolocation) return showBanner('Geolocation not supported');
+      // prompt for permission
+      navigator.geolocation.getCurrentPosition(()=>{}, e=>showBanner('Enable location access'), {timeout:10000});
       if(watchId) navigator.geolocation.clearWatch(watchId);
-      watchId = navigator.geolocation.watchPosition(p=>{
-        const {latitude:lat,longitude:lon,accuracy} = p.coords;
-        if(!marker) marker = L.marker([lat,lon]).addTo(map2D).bindPopup('You are here').openPopup();
-        else marker.setLatLng([lat,lon]);
-        document.getElementById('info').innerHTML = `Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Acc: ±${accuracy.toFixed(1)} m`;
-      }, e=>document.getElementById('info').textContent=`Error: ${e.message}`,
-      {enableHighAccuracy:true,timeout:5000,maximumAge:0});
+      watchId = navigator.geolocation.watchPosition(pos=>{
+        const {latitude:lat,longitude:lon,accuracy,altitude:alt} = pos.coords;
+        if(accuracy===0) showBanner('GPS accuracy is zero – enable high-accuracy GPS');
+        // place/move marker
+        if(!marker){
+          marker = L.marker([lat,lon]).addTo(map2D).bindPopup('You are here').openPopup();
+        } else {
+          marker.setLatLng([lat,lon]);
+        }
+        // only center on first fix
+        map2D.setView([lat,lon], map2D.getZoom());
+        // estimated floor
+        let floor='Unknown';
+        if(alt!=null){
+          const d=alt-320;
+          floor = d<2?'Ground': d<5?'First':'Upper';
+        }
+        document.getElementById('info').innerHTML=`
+          Lat: ${lat.toFixed(6)}<br>
+          Lon: ${lon.toFixed(6)}<br>
+          Acc: ±${accuracy.toFixed(1)} m<br>
+          Estimated Floor: ${floor}
+        `;
+        // if on a route, check off‐route
+        if(routeCoords){
+          const pt = turf.point([lon,lat]);
+          const dist = turf.pointToLineDistance(pt, turf.lineString(routeCoords), {units:'meters'});
+          if(dist>15) {
+            showBanner('Off route, recalculating…');
+            drawRoute();
+          }
+        }
+      }, err=>{
+        showBanner(`Geolocation error: ${err.message}`);
+      }, {enableHighAccuracy:true, timeout:5000, maximumAge:0});
     }
 
+    // Filter destination list
     function filterList(){
       const f = document.getElementById('searchBox').value.toLowerCase();
-      Array.from(document.getElementById('destination').options).forEach(o=>o.style.display=o.text.toLowerCase().includes(f)?'block':'none');
+      Array.from(document.getElementById('destination').options)
+        .forEach(o=> o.style.display = o.text.toLowerCase().includes(f)?'block':'none');
     }
-    
+
+    // Draw route & show steps
     function drawRoute(){
       const key = document.getElementById('destination').value;
-      if(!key||!marker) return alert('Start GPS & select destination');
+      if(!key||!marker) return showBanner('Start GPS & select destination');
       if(routingControl) map2D.removeControl(routingControl);
+
       routingControl = L.Routing.control({
-        router: L.Routing.osrmv1({serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1',profile:'foot'}),
-        waypoints:[marker.getLatLng(),L.latLng(...locations[key])],
-        fitSelectedRoutes:true,show:false,routeWhileDragging:false,addWaypoints:false,createMarker:()=>null,
-        lineOptions:{styles:[{color:'#0055A4',weight:5}]}
-      }).on('routesfound',e=>{
-        const route = e.routes[0];
-        if(route.coordinates.some(pt=>!turf.booleanPointInPolygon(turf.point([pt.lng,pt.lat]),campusPoly))) return alert('Route exits campus');
-        const steps = route.instructions.map(i=>`<li>${i.text}</li>`).join('');
-        document.getElementById('directions').innerHTML = `<h3>Steps</h3><ol>${steps}</ol>`;
-      }).on('routingerror',e=>alert('Routing error: '+(e.error?.message||e.message))).addTo(map2D);
+        router: L.Routing.osrmv1({
+          serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1',
+          profile:'foot'
+        }),
+        waypoints:[ marker.getLatLng(), L.latLng(...locations[key]) ],
+        fitSelectedRoutes:true,
+        show:false, routeWhileDragging:false, addWaypoints:false,
+        createMarker:()=>null,
+        lineOptions:{ styles:[{color:'#0055A4',weight:5}] }
+      })
+      .on('routesfound', e=>{
+        const r = e.routes[0];
+        // validate inside campus
+        routeCoords = r.coordinates.map(c=>[c.lng,c.lat]);
+        if(routeCoords.some(c=> !turf.booleanPointInPolygon(turf.point(c),campusPoly) )){
+          return showBanner('Route exits campus bounds');
+        }
+        // display steps & progress
+        const steps = r.instructions.map((i,idx)=>
+          `<li id="step-${idx}">${i.text}</li>`
+        ).join('');
+        document.getElementById('directions').innerHTML = `
+          <h3>Steps (1/${r.instructions.length})</h3>
+          <ol>${steps}</ol>
+        `;
+      })
+      .on('routingerror', ()=>showBanner('Routing error'))
+      .addTo(map2D);
     }
   </script>
 </body>
