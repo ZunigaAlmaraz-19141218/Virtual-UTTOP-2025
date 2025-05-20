@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Motion Recorder (Mobile Optimized)</title>
+  <title>Motion Recorder (Mobile)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,27 +11,40 @@
       margin: auto;
     }
 
-    .button-group {
+    .button-group, .label-buttons {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 20px;
     }
 
+    .label-buttons {
+      margin-top: 40px;
+    }
+
     button {
-      flex: 1 1 48%;
+      flex: 1 1 45%;
       min-width: 45%;
+      min-height: 80px;
       padding: 20px;
-      font-size: 1.3rem;
+      font-size: 1.6rem;
       border: none;
       border-radius: 10px;
       background-color: #007bff;
       color: white;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      transition: background-color 0.2s;
     }
 
     button:hover {
       background-color: #0056b3;
+    }
+
+    button.active-label {
+      background-color: #28a745 !important;
     }
 
     #motion, #status, #download {
@@ -71,16 +84,15 @@
 </div>
 
 <h3>Hold to Label Movement</h3>
-<div class="button-group">
-  <button onmousedown="setLabel('left')" onmouseup="clearLabel()" ontouchstart="setLabel('left')" ontouchend="clearLabel()">← Left</button>
-  <button onmousedown="setLabel('right')" onmouseup="clearLabel()" ontouchstart="setLabel('right')" ontouchend="clearLabel()">→ Right</button>
-  <button onmousedown="setLabel('forward')" onmouseup="clearLabel()" ontouchstart="setLabel('forward')" ontouchend="clearLabel()">↑ Forward</button>
-  <button onmousedown="setLabel('backward')" onmouseup="clearLabel()" ontouchstart="setLabel('backward')" ontouchend="clearLabel()">↓ Backward</button>
-  <button onmousedown="setLabel('stairs_up')" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_up')" ontouchend="clearLabel()">Stairs ↑</button>
-  <button onmousedown="setLabel('stairs_down')" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_down')" ontouchend="clearLabel()">Stairs ↓</button>
-  <button onmousedown="setLabel('wait')" onmouseup="clearLabel()" ontouchstart="setLabel('wait')" ontouchend="clearLabel()">⏳ Wait</button>
+<div class="label-buttons">
+  <button id="btn-left" onmousedown="setLabel('left', this)" onmouseup="clearLabel()" ontouchstart="setLabel('left', this)" ontouchend="clearLabel()">← Left</button>
+  <button id="btn-right" onmousedown="setLabel('right', this)" onmouseup="clearLabel()" ontouchstart="setLabel('right', this)" ontouchend="clearLabel()">→ Right</button>
+  <button id="btn-forward" onmousedown="setLabel('forward', this)" onmouseup="clearLabel()" ontouchstart="setLabel('forward', this)" ontouchend="clearLabel()">↑ Forward</button>
+  <button id="btn-backward" onmousedown="setLabel('backward', this)" onmouseup="clearLabel()" ontouchstart="setLabel('backward', this)" ontouchend="clearLabel()">↓ Backward</button>
+  <button id="btn-stairs-up" onmousedown="setLabel('stairs_up', this)" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_up', this)" ontouchend="clearLabel()">Stairs ↑</button>
+  <button id="btn-stairs-down" onmousedown="setLabel('stairs_down', this)" onmouseup="clearLabel()" ontouchstart="setLabel('stairs_down', this)" ontouchend="clearLabel()">Stairs ↓</button>
+  <button id="btn-wait" onmousedown="setLabel('wait', this)" onmouseup="clearLabel()" ontouchstart="setLabel('wait', this)" ontouchend="clearLabel()">⏳ Wait</button>
 </div>
-
 
 <div id="motion">Motion data will appear here.</div>
 <div id="status">Not recording.</div>
@@ -94,6 +106,7 @@
   const minSampleInterval = 100;
   let recordingStartTime = 0;
   let currentLabel = "";
+  let currentButton = null;
 
   function handleMotion(event) {
     const now = Date.now();
@@ -188,13 +201,20 @@
     }
   }
 
-  function setLabel(label) {
+  function setLabel(label, button) {
     currentLabel = label;
-    if (navigator.vibrate) navigator.vibrate(50);  // haptic feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+
+    // visuell markieren
+    if (currentButton) currentButton.classList.remove("active-label");
+    button.classList.add("active-label");
+    currentButton = button;
   }
 
   function clearLabel() {
     currentLabel = "";
+    if (currentButton) currentButton.classList.remove("active-label");
+    currentButton = null;
   }
 </script>
 
