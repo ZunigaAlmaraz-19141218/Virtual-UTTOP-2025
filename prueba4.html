@@ -7,6 +7,8 @@
   <!-- Leaflet & Routing CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <!-- Turf for geometry ops -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family:'Segoe UI',Arial,sans-serif; background:#f7f9fa; color:#333; }
@@ -23,7 +25,10 @@
     }
     #controls button:hover { background:#e6c200; }
     #controls select { width:180px; }
-    #map2D { height:500px; width:100%; border-top:1px solid #ddd; border-bottom:1px solid #ddd; }
+    #map2D {
+      height:500px; width:100%;
+      border-top:1px solid #ddd; border-bottom:1px solid #ddd;
+    }
     #errorBanner {
       display:none; background:#f8d7da; color:#721c24;
       padding:8px; font-size:14px; text-align:center;
@@ -47,11 +52,11 @@
 </head>
 <body>
 
-  <div id="controls">
-    <button onclick="startTracking()">Start GPS</button>
+  <div id="controls" role="region" aria-label="Map controls">
+    <button id="btnStartGPS" aria-label="Start GPS" onclick="startTracking()">Start GPS</button>
 
     <label for="origin">Start From:</label>
-    <select id="origin">
+    <select id="origin" aria-label="Select origin">
       <option value="gps">My Location</option>
       <optgroup label="General Facilities">
         <option value="entrance">Main Entrance</option>
@@ -90,7 +95,7 @@
     </select>
 
     <label for="destination">Go To:</label>
-    <select id="destination">
+    <select id="destination" aria-label="Select destination">
       <optgroup label="General Facilities">
         <option value="entrance">Main Entrance</option>
         <option value="library">Library</option>
@@ -127,41 +132,48 @@
       </optgroup>
     </select>
 
-    <button onclick="drawRoute()">Go</button>
+    <button id="btnGo" aria-label="Calculate route" onclick="drawRoute()">Go</button>
   </div>
 
+  <!-- friendly banner instead of alerts -->
   <div id="errorBanner" role="alert"></div>
+
+  <!-- map & info panels -->
   <div id="map2D" role="region" aria-label="Campus Map"></div>
   <div id="info" role="status"></div>
   <div id="directions" class="directions-box" role="region" aria-live="polite"></div>
 
-  <!-- JS Libraries -->
+  <!-- Leaflet & Routing JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <script>
-    function showBanner(msg){
+    // showBanner instead of alert()
+    function showBanner(msg) {
       const b = document.getElementById('errorBanner');
-      b.textContent = msg; b.style.display = 'block';
-      setTimeout(()=> b.style.display='none', 4000);
+      b.textContent = msg;
+      b.style.display = 'block';
+      clearTimeout(b._t);
+      b._t = setTimeout(()=> b.style.display='none', 4000);
     }
 
-    // Campus bounds & polygon
+    // campus boundaries + polygon
     const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
-    const campusPoly = turf.polygon([[
-      [0.0459,43.2235],[0.0536,43.2235],[0.0536,43.2280],
-      [0.0459,43.2280],[0.0459,43.2235]
+    const campusPoly = turf.polygon([[ 
+      [0.0459,43.2235],[0.0536,43.2235],
+      [0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]
     ]]);
 
-    // Map init
-    const map2D = L.map('map2D',{ center:[43.22476,0.05044], zoom:18,
-                                 minZoom:17, maxZoom:20, maxBounds:campusBounds });
+    // initialize map2D
+    const map2D = L.map('map2D',{
+      center:[43.22476,0.05044],zoom:18,
+      minZoom:17,maxZoom:20,maxBounds:campusBounds
+    });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'© OpenStreetMap', maxZoom:20
+      attribution:'© OpenStreetMap',maxZoom:20
     }).addTo(map2D);
 
-    // Campus locations
+    // named locations
     const locations = {
       entrance:[43.225018,0.052059], library:[43.224945,0.051151],
       cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
@@ -181,68 +193,76 @@
       laboratory_l2:[43.225945,0.050215], laboratory_l3:[43.226115,0.050229],
       laboratory_l4:[43.226295,0.050246]
     };
+
     let marker, routingControl, watchId, routeCoords;
 
-    // GPS start (optional)
+    // start GPS & show position + off-route & floor detection
     function startTracking(){
       if(!navigator.geolocation) return showBanner('Geolocation not supported');
-      navigator.geolocation.getCurrentPosition(()=>{},e=>showBanner('Enable location access'),{timeout:10000});
+      navigator.geolocation.getCurrentPosition(
+        ()=>{}, e=>showBanner('Please allow location access'),
+        { timeout:10000 }
+      );
       if(watchId) navigator.geolocation.clearWatch(watchId);
       watchId = navigator.geolocation.watchPosition(p=>{
-        const {latitude:lat,longitude:lon,accuracy,altitude:alt} = p.coords;
+        const { latitude:lat, longitude:lon, accuracy, altitude:alt } = p.coords;
+        // zero accuracy
+        if(accuracy <= 0) showBanner('GPS accuracy unavailable, please enable GPS');
+        // place/move marker
         if(!marker) marker = L.marker([lat,lon]).addTo(map2D).bindPopup('You are here').openPopup();
         else marker.setLatLng([lat,lon]);
-        // Info panel
-        let floor='Unknown';
-        if(alt!=null){
-          const d=alt-320;
-          floor = d<2?'Ground':d<5?'First':'Upper';
+        // update info panel
+        let floor = 'Unknown';
+        if(alt != null) {
+          const d = alt - 319;
+          floor = d<4?'Ground':d<6?'First':'Upper';
         }
-        document.getElementById('info').innerHTML=`
-          Lat: ${lat.toFixed(6)}<br>
-          Lon: ${lon.toFixed(6)}<br>
-          Acc: ±${accuracy.toFixed(1)} m<br>
-          Estimated Floor: ${floor}
+        document.getElementById('info').innerHTML = `
+          <strong>Lat:</strong> ${lat.toFixed(6)}<br>
+          <strong>Lon:</strong> ${lon.toFixed(6)}<br>
+          <strong>Alt:</strong> ${alt!=null?alt.toFixed(2)+' m':'Not available'}<br>
+          <strong>Acc:</strong> &plusmn;${accuracy.toFixed(1)} m<br>
+          <strong>Floor:</strong> ${floor}
         `;
-        // Off‐route detection
+        // off-route?
         if(routeCoords){
           const dist = turf.pointToLineDistance(
             turf.point([lon,lat]),
             turf.lineString(routeCoords),
-            {units:'meters'}
+            { units:'meters' }
           );
-          if(dist>15) {
-            showBanner('Off route, recalculating…');
+          if(dist > 15) {
+            showBanner('Off-route, recalculating…');
             drawRoute();
           }
         }
-      }, e=>showBanner(`GPS error: ${e.message}`),
-      {enableHighAccuracy:true,timeout:5000,maximumAge:0});
+      },
+      err => showBanner(`GPS error: ${err.message}`),
+      { enableHighAccuracy:true, timeout:5000, maximumAge:0 });
     }
 
-    // Filter select lists
+    // filter both lists by search box
     function filterList(){
       const f = document.getElementById('searchBox').value.toLowerCase();
       ['origin','destination'].forEach(id=>{
         Array.from(document.getElementById(id).options)
-          .forEach(o=>o.style.display = o.text.toLowerCase().includes(f)?'block':'none');
+          .forEach(o=> o.style.display = o.text.toLowerCase().includes(f)?'block':'none');
       });
     }
 
-    // Draw route A→B
+    // draw route from A→B without moving GPS
     function drawRoute(){
       const oKey = document.getElementById('origin').value;
       const dKey = document.getElementById('destination').value;
       if(!dKey) return showBanner('Select a destination');
-      // determine origin coords
+      // determine origin
       let originLatLng;
       if(oKey==='gps'){
-        if(!marker) return showBanner('Click “Start GPS” first or choose a building');
+        if(!marker) return showBanner('Click “Start GPS” first or choose an origin');
         originLatLng = marker.getLatLng();
       } else {
         originLatLng = L.latLng(...locations[oKey]);
       }
-      // destination
       const destLatLng = L.latLng(...locations[dKey]);
 
       if(routingControl) map2D.removeControl(routingControl);
@@ -259,15 +279,17 @@
       })
       .on('routesfound', e=>{
         const r = e.routes[0];
-        // campus boundary check
         routeCoords = r.coordinates.map(c=>[c.lng,c.lat]);
         if(routeCoords.some(c=>!turf.booleanPointInPolygon(turf.point(c),campusPoly))){
           return showBanner('Route exits campus bounds');
         }
-        // show steps & progress
-        const steps = r.instructions.map((i,idx)=>`<li id="step-${idx}">${i.text}</li>`).join('');
+        // show steps + progress indicator
+        const total = r.instructions.length;
+        const steps = r.instructions
+          .map((i,idx)=>`<li id="step-${idx}">${i.text}</li>`)
+          .join('');
         document.getElementById('directions').innerHTML = `
-          <h3>Steps (1/${r.instructions.length})</h3>
+          <h3>Steps (1/${total})</h3>
           <ol>${steps}</ol>
         `;
       })
