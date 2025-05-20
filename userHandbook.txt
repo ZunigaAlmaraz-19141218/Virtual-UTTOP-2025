@@ -1,0 +1,102 @@
+Step 1: Enter Your Information
+Please enter your name and the exact model of your smartphone. This information is optional — if you prefer not to share it, you can simply write “unknown”.
+
+In the next steps, you will perform physical movements while holding your phone in your hand. After completing all steps, you will be able to download your motion data and send it via email to the Virtual UTTOP group. The email address will be shown at the end.
+
+Important:
+Hold your phone naturally — as if you were using it for navigation while walking.
+Make sure you have enough space to turn, walk, and use a staircase safely.
+Be especially careful when going up or down the stairs.
+The entire session will take around 5 minutes.
+
+Thank you for your support — and enjoy this short movement session!
+
+Step 2: Get Ready
+Hold your phone steady in your hand, in the position described above.
+When you press the Start button, the system will record your movement for 3 seconds.
+Afterward, the next step will appear automatically.
+
+Note: Recording starts only after you press Start.
+
+Step 3: Turn Left (10x)
+Hold your phone as described.
+Slowly rotate 90 degrees to the left (counterclockwise) while standing in place.
+Stay calm and move steadily.
+After pressing Start, the system will record your movement for 3 seconds.
+Use the progress bar for timing guidance.
+Repeat this movement 10 times.
+
+Step 4: Get Ready
+Hold your phone still in your hand.
+Press the Start button and wait while your movement is recorded for 3 seconds.
+Then continue to the next step.
+
+Step 5: Turn Right (10x)
+Hold your phone as described.
+Now turn slowly 90 degrees to the right (clockwise) while standing in place.
+Press Start to begin recording for 3 seconds.
+Repeat this movement 10 times.
+
+Step 6: Get Ready
+Hold your phone still in your hand.
+Press the Start button and wait for 3 seconds while your movement is recorded.
+
+Step 7: Walk Forward (10x)
+Hold your phone in the described position.
+Now walk forward slowly and steadily.
+Press Start, then take a few calm steps forward.
+Recording will take 3 seconds.
+Repeat this movement 10 times.
+
+Step 8: Get Ready
+Hold your phone still.
+Press Start and remain still during the 3-second recording.
+
+Step 9: Walk Backward (10x)
+Hold your phone as instructed.
+Now walk backward slowly and carefully.
+After pressing Start, begin moving.
+Recording will last for 3 seconds.
+Repeat this movement 10 times.
+
+Step 10: Get Ready
+Hold your phone still.
+Press Start and remain in place while the system records for 3 seconds.
+
+Step 11: Go Up the Stairs (10x)
+Hold your phone securely.
+Now walk up a staircase slowly and carefully.
+Press Start before you begin.
+Recording will last for 3 seconds.
+Repeat this step 10 times.
+
+Step 12: Get Ready
+Hold your phone still.
+Press Start and remain still while your movement is recorded for 3 seconds.
+
+Step 13: Go Down the Stairs (10x)
+Hold your phone securely.
+Now walk down the stairs slowly and carefully.
+Press Start, then begin your descent.
+Movement will be recorded for 3 seconds.
+Repeat this step 10 times.
+
+Step 14: Final Pause (3x)
+Hold your phone still in your hand.
+Press Start, and remain calm and motionless while the app records for 3 seconds.
+Repeat this three times.
+
+Step 15: Send Your Data
+You’ve completed the session — thank you!
+
+Now press the Download button to save the recorded motion data as a CSV file.
+Please send the file via email to:
+
+sebastian.meyer@etudiant.uttop.fr
+
+Important note:
+If you feel that the movements were not performed correctly, please do not send the data.
+You may repeat the session as many times as you like.
+Feel free to use it as a short and active break in your daily routine.
+
+Thank you again for your time and your valuable contribution to the Virtual UTTOP project!
