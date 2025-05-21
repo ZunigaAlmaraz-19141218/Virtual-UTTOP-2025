@@ -63,6 +63,16 @@
       background-color: #28a745;
       transition: width linear;
     }
+    /* animation for the user */
+    #circle-container {
+      width: 300px;
+      height: 300px;
+      margin: auto;
+    }
+    #vector {
+      transform-origin: 150px 150px;
+      transition: transform linear;
+    }
   </style>
 </head>
 <body>
@@ -90,7 +100,7 @@ Thank you for your support — and enjoy this short movement session!
 
 <!-- EXPERIMENT -->
 <div id="experiment" style="display:none;">
-  <div id="experimentInstruction"></div> <!-- <- eindeutige ID -->
+  <div id="experimentInstruction"></div> 
   <h2 id="stepTitle"></h2>
   <div class="counter" id="counterDisplay"></div>
   <div id="status">Ready.</div>
@@ -98,6 +108,14 @@ Thank you for your support — and enjoy this short movement session!
   <div id="motion">Waiting for data...</div>
   <button id="nextButton" onclick="startMeasurement()">Start Measurement</button>
 </div>
+<!-- circle Container -->
+<div id="circle-container"style="display: none;">
+  <button id="nextAnimation" onclick="startAnimation()">Start Animation</button>
+  <svg width="300" height="300">
+    <circle cx="150" cy="150" r="100" stroke="black" stroke-width="2" fill="none"/>
+    <line id="vector" x1="150" y1="150" x2="250" y2="150" stroke="red" stroke-width="4" />
+  </svg>
+</div>  
 
 <!-- DONE -->
 <div id="done" style="display:none;">
@@ -121,12 +139,13 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
 </div>
 
 <script>
-  const measurementDuration = 3000;
+  const measurementDuration = 2900;
+  let currentAngle = 0;
 
   const stepDescriptions = [
     "", // Step 0 (Setup)
     "Get Ready\nHold your phone steady in your hand, in the position described above.\nWhen you press the Start button, the system will record your movement for 3 seconds.\nNote: Recording starts only after you press Start.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn left for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn left for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 10 times.\n You can use the button to start the animation for training.",
     "Get Ready\nHold your phone still in your hand.\nPress the Start button and wait while your movement is recorded for 3 seconds.",
     "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn right for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
     "Get Ready\nHold your phone still in your hand.",
@@ -137,7 +156,7 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
     " Get Ready\nHold your phone still.",
     "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk down a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
-    " Final Pause (3x)\nHold your phone still.\nRepeat this three times."
+    " Final Pause \nHold your phone still.\nRepeat this three times."
   ];
 
   let steps = [
@@ -214,6 +233,11 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     document.getElementById("experimentInstruction").textContent = stepDescriptions[currentStep + 1] || "";
     document.getElementById("status").textContent = "Press start for next segment.";
     document.getElementById("progressBar").style.width = "0%";
+    if(currentStep == 1){
+      document.getElementById("circle-container").style.display = "block";
+    }else{
+      document.getElementById("circle-container").style.display = "none";
+    }
   }
 
   function startMeasurement() {
@@ -271,6 +295,26 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     a.click();
     URL.revokeObjectURL(url);
   }
+  function startAnimation() {
+    const vector = document.getElementById("vector");
+    const progress = document.getElementById("progressBar");
+
+    currentAngle -= 90;
+    vector.style.transition = `transform ${measurementDuration}ms linear`;
+    vector.style.transform = `rotate(${currentAngle}deg)`;
+
+    progress.style.transition = `width ${measurementDuration}ms linear`;
+    progress.style.width = "100%";
+
+    setTimeout(() => {
+      progress.style.transition = "none";
+      progress.style.width = "0%";
+      setTimeout(() => {
+        progress.style.transition = `width ${measurementDuration}ms linear`;
+      }, 50);
+    }, measurementDuration + 50);
+  }
+
 </script>
 
 </body>
