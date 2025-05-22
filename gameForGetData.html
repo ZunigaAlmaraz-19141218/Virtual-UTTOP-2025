@@ -150,34 +150,34 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
   const stepDescriptions = [
     "", // Step 0 (Setup)
     "Get Ready\nHold your phone steady in your hand, in the position described above.\nWhen you press the Start button, the system will record your movement for 3 seconds.\nNote: Recording starts only after you press Start.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn left for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 10 times.\n You can use the button to start the animation for training.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn left for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 8 times.\n You can use the button to start the train for training.",
     "Get Ready\nHold your phone still in your hand.\nPress the Start button and wait while your movement is recorded for 3 seconds.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn right for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Turn right for 90° degree. Try to turn so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     "Get Ready\nHold your phone still in your hand.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Walk forward so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Walk forward so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     "Get Ready\nHold your phone still.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Walk backforward so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Walk backforward so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     " Get Ready\nHold your phone still.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     " Get Ready\nHold your phone still.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk down a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 10 times.",
-    " Final Pause \nHold your phone still.\nRepeat this three times."
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk down a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
+    " Final Pause \nHold your phone still.\nRepeat this 2 times."
   ];
   
   let steps = [
     { label: "wait", count: 1 },
-    { label: "left", count: 10 },
+    { label: "left", count: 8 },
     { label: "wait", count: 1 },
-    { label: "right", count: 10 },
+    { label: "right", count: 8 },
     { label: "wait", count: 1 },
-    { label: "forward", count: 10 },
+    { label: "forward", count: 8 },
     { label: "wait", count: 1 },
-    { label: "backward", count: 10 },
+    { label: "backward", count: 8 },
     { label: "wait", count: 1 },
-    { label: "stairs_up", count: 10 },
+    { label: "stairs_up", count: 8 },
     { label: "wait", count: 1 },
-    { label: "stairs_down", count: 10 },
-    { label: "wait", count: 3 }
+    { label: "stairs_down", count: 8 },
+    { label: "wait", count: 2 }
   ];
 
   const measurementDuration = 250;
@@ -343,7 +343,7 @@ function startAnimation(rotationAngle) {
   vector.style.transition = `transform ${measurementDuration}ms linear`;
   vector.style.transform = `rotate(${angle}deg)`;
 
-  // Fortschrittsbalken (optional)
+  // Fortschrittsbalken
   const progress = document.getElementById("progressBar");
   progress.style.transition = `width ${measurementDuration}ms linear`;
   progress.style.width = "100%";
@@ -356,10 +356,6 @@ function startAnimation(rotationAngle) {
     }, 50);
   }, measurementDuration + 50);
 }
-
-
-
 </script>
-
 </body>
 </html>
