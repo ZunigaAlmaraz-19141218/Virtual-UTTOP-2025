@@ -125,6 +125,13 @@ Thank you for your support — and enjoy this short movement session!
   </svg>
 </div>  
 
+<!-- Zwei Buttons für Stairs -->
+<div id="stairs-buttons" style="display: none;">
+  <button onclick="startStairsMeasurement('stairs_up')">Start Stairs Up</button>
+  <button onclick="startStairsMeasurement('stairs_down')">Start Stairs Down</button>
+</div>
+
+
 <!-- DONE -->
 <div id="done" style="display:none;">
   <div id="instruction">Step 15: Send Your Data
@@ -160,24 +167,21 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     " Get Ready\nHold your phone still.",
     "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     " Get Ready\nHold your phone still.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk down a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     " Final Pause \nHold your phone still.\nRepeat this 2 times."
   ];
   
   let steps = [
     { label: "wait", count: 1 },
-    { label: "left", count: 8 },
+    { label: "left", count: 1 },
     { label: "wait", count: 1 },
-    { label: "right", count: 8 },
+    { label: "right", count: 1 },
     { label: "wait", count: 1 },
-    { label: "forward", count: 8 },
+    { label: "forward", count: 1 },
     { label: "wait", count: 1 },
-    { label: "backward", count: 8 },
+    { label: "backward", count: 1 },
     { label: "wait", count: 1 },
-    { label: "stairs_up", count: 8 },
+    { label: "stairs_up_down", count: 1 }, // stairs combined
     { label: "wait", count: 1 },
-    { label: "stairs_down", count: 8 },
-    { label: "wait", count: 2 }
   ];
 
   const measurementDuration = 250;
@@ -186,6 +190,9 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
   const minSampleInterval = 100;
   let currentAngleLeft = 0;
   let currentAngleRight = 0;
+  let currentStairsLabel = "";
+  let repetitionStairsUp = 0;
+  let repetitionStairsDown = 0;
   const counterClockwise = -90;
   const clockwise = 90;
 
@@ -215,26 +222,30 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     }
   }
 
-  function handleMotion(event) {
-    const now = Date.now();
-    if (!recording || now - lastSampleTime < minSampleInterval) return;
-    lastSampleTime = now;
+function handleMotion(event) {
+  const now = Date.now();
+  if (!recording || now - lastSampleTime < minSampleInterval) return;
+  lastSampleTime = now;
 
-    const acc = event.acceleration || {}, rot = event.rotationRate || {};
-    const time = now - recordingStartTime;
-    const label = steps[currentStep].label;
-    const segment = `${label}_${repetition + 1}`;
+  const acc = event.acceleration || {}, rot = event.rotationRate || {};
+  const time = now - recordingStartTime;
 
-    motionData.push([
-      time, acc.x ?? "", acc.y ?? "", acc.z ?? "",
-      rot.alpha ?? "", rot.beta ?? "", rot.gamma ?? "",
-      label, segment
-    ]);
-
-    document.getElementById("motion").innerHTML =
-      `Acc: x=${acc.x?.toFixed(2) ?? "?"}, y=${acc.y?.toFixed(2) ?? "?"}, z=${acc.z?.toFixed(2) ?? "?"} |
-       Rot: α=${rot.alpha?.toFixed(2) ?? "?"}, β=${rot.beta?.toFixed(2) ?? "?"}, γ=${rot.gamma?.toFixed(2) ?? "?"}`;
+  let label = steps[currentStep].label;
+  if (label === "stairs_up_down") {
+    label = currentStairsLabel || "stairs";
   }
+  const segment = `${label}_${repetition + 1}`;
+
+  motionData.push([
+    time, acc.x ?? "", acc.y ?? "", acc.z ?? "",
+    rot.alpha ?? "", rot.beta ?? "", rot.gamma ?? "",
+    label, segment
+  ]);
+
+  document.getElementById("motion").innerHTML =
+    `Acc: x=${acc.x?.toFixed(2) ?? "?"}, y=${acc.y?.toFixed(2) ?? "?"}, z=${acc.z?.toFixed(2) ?? "?"} |
+     Rot: α=${rot.alpha?.toFixed(2) ?? "?"}, β=${rot.beta?.toFixed(2) ?? "?"}, γ=${rot.gamma?.toFixed(2) ?? "?"}`;
+}
 
   function updateStepDisplay() {
     const step = steps[currentStep];
@@ -243,6 +254,7 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     document.getElementById("experimentInstruction").textContent = stepDescriptions[currentStep + 1] || "";
     document.getElementById("status").textContent = "Press start for next segment.";
     document.getElementById("progressBar").style.width = "0%";
+    
     if(currentStep == 1){
       document.getElementById("circle-container-left").style.display = "block";
     }else{
@@ -253,6 +265,17 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     }else{
       document.getElementById("circle-container-right").style.display = "none";
     }
+    if (currentStep == 9) {
+        document.getElementById("stairs-buttons").style.display = "block";
+        document.getElementById("nextButton").style.display = "none";
+      } else {
+        document.getElementById("stairs-buttons").style.display = "none";
+        document.getElementById("nextButton").style.display = "block";
+    }if (currentStep == 9) {
+        document.getElementById("counterDisplay").textContent =
+        `Stairs Up: ${repetitionStairsUp} / 10, Down: ${repetitionStairsDown} / 10`;
+    }
+
   }
 
   function startMeasurement() {
@@ -304,6 +327,50 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
       updateStepDisplay();
     }, measurementDuration);
   }
+
+ function startStairsMeasurement(label) {
+  const progress = document.getElementById("progressBar");
+  const btn = document.getElementById("nextButton");
+
+  currentStairsLabel = label;
+  recording = true;
+  recordingStartTime = Date.now();
+  document.getElementById("status").textContent = `Recording (${label})...`;
+
+  progress.style.transition = "none";
+  progress.style.width = "0%";
+  void progress.offsetWidth;
+  progress.style.transition = `width ${measurementDuration}ms linear`;
+  progress.style.width = "100%";
+
+  setTimeout(() => {
+    recording = false;
+    document.getElementById("status").textContent = "Done.";
+    progress.style.transition = "none";
+    progress.style.width = "0%";
+
+    if (label === "stairs_up") {
+      repetitionStairsUp++;
+    } else if (label === "stairs_down") {
+      repetitionStairsDown++;
+    }
+
+    // Anzeige aktualisieren
+    document.getElementById("counterDisplay").textContent =
+      `Stairs Up: ${repetitionStairsUp} / 10, Down: ${repetitionStairsDown} / 10`;
+
+    if (repetitionStairsUp >= 10 && repetitionStairsDown >= 10) {
+      repetitionStairsUp = 0;
+      repetitionStairsDown = 0;
+      currentStep++;
+      updateStepDisplay();
+    }
+  }, measurementDuration);
+}
+
+
+
+
 
   function downloadCSV() {
     const safeName = userName.replace(/\s+/g, "_").toLowerCase();
