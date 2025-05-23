@@ -313,8 +313,8 @@ function handleMotion(event) {
     }
     if (currentStep == 3) {
       const vector = document.getElementById("vector-right");
-      vector.style.transition = "none"; // keine Animation
-      vector.style.transform = `rotate(${lastVectorAngle}deg)`; // direkt setzen
+      vector.style.transition = "none"; 
+      vector.style.transform = `rotate(${lastVectorAngle}deg)`; 
     }
     if (currentStep == 9) {
         document.getElementById("stairs-buttons").style.display = "block";
@@ -346,7 +346,7 @@ function handleMotion(event) {
     }
     if (currentStep == 3) {
       document.getElementById("circle-container-right").style.display = "block";
-      startAnimation(clockwise, lastVectorAngle); // übertrage Winkel
+      startAnimation(clockwise, lastVectorAngle); 
     }
     else{
       document.getElementById("circle-container-right").style.display = "none";
@@ -386,7 +386,7 @@ function handleMotion(event) {
 
   if ((label === "stairs_up" && repetitionStairsUp >= maxReps) ||
       (label === "stairs_down" && repetitionStairsDown >= maxReps)) {
-    return; // blockiere zu viele Wiederholungen
+    return; 
   }
 
   currentStairsLabel = label;
@@ -466,14 +466,13 @@ function startAnimation(rotationAngle, initialAngle = null) {
     vector = document.getElementById("vector-right");
   }
  else {
-    return; // keine Animation
+    return; 
   }
 
-  // Animation anwenden
+ 
   vector.style.transition = `transform ${measurementDuration}ms linear`;
   vector.style.transform = `rotate(${angle}deg)`;
 
-  // Fortschrittsbalken
   const progress = document.getElementById("progressBar");
   progress.style.transition = `width ${measurementDuration}ms linear`;
   progress.style.width = "100%";
