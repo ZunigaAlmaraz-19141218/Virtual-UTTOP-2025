@@ -80,6 +80,7 @@
 <!-- SETUP -->
 <div id="setup">
   <div id="instruction">Step 1: Enter Your Information
+  <img src="PicturesForGetData/naturalPosition.png" alt="Hold your phone in a natural position, similar to how you would use it while navigating with a maps application." width="300" height="200">  
 Please enter your name and the model of your smartphone. This information is optional — if you prefer not to share it, you can simply write “unknown”.
 
 In the next steps, you will perform physical movements while holding your phone in your hand. After completing all steps, you will be able to download your motion data and send it via email to the Virtual UTTOP group. The email address will be shown at the end.
@@ -118,7 +119,7 @@ Thank you for your support — and enjoy this short movement session!
 </div>  
 <!-- circle Container right -->
 <div id="circle-container-right"style="display: none;">
-  <button id="nextAnimation" onclick="startAnimation(clockwise)">Start Training</button>
+  <button id="nextAnimation" onclick="startAnimation(clockwise, lastVectorAngle)">Start Training</button>
   <svg width="300" height="300">
     <circle cx="150" cy="150" r="100" stroke="black" stroke-width="2" fill="none"/>
     <line id="vector-right" x1="150" y1="150" x2="250" y2="150" stroke="red" stroke-width="4" />
@@ -165,26 +166,26 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
     "Get Ready\nHold your phone still.",
     "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3: Walk backforward so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
     " Get Ready\nHold your phone still.",
-    "Step 1: Read the instructions carefully.\n Step 2: Press the Button to start the measurement.\n Step 3:Walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 4: Repat this 8 times.",
+    "Step 1: Read the instructions carefully.\n Step 2: Press the Button Stairs up and walk up a staircase slowly and carefully so long as the green bar load is loading.\n Step 3: Turn slowly and carefully.\n Step 4: Press the Button Stairs down and walk down a staircase slowly and carefully so long as the green bar load is loading.\n Step 5: Repat this 8 times.",
     " Get Ready\nHold your phone still.",
     " Final Pause \nHold your phone still.\nRepeat this 2 times."
   ];
   
   let steps = [
     { label: "wait", count: 1 },
-    { label: "left", count: 1 },
+    { label: "left", count: 8 },
     { label: "wait", count: 1 },
-    { label: "right", count: 1 },
+    { label: "right", count: 8 },
     { label: "wait", count: 1 },
-    { label: "forward", count: 1 },
+    { label: "forward", count: 8 },
     { label: "wait", count: 1 },
-    { label: "backward", count: 1 },
+    { label: "backward", count: 8 },
     { label: "wait", count: 1 },
-    { label: "stairs_up_down", count: 1 }, // stairs combined
-    { label: "wait", count: 1 },
+    { label: "stairs_up_down", count: 8 }, // stairs combined
+    { label: "wait", count: 3 },
   ];
 
-  const measurementDuration = 250;
+  const measurementDuration = 2500;
   let userName = "", userDevice = "", currentStep = 0, repetition = 0;
   let motionData = [], recording = false, recordingStartTime = 0, lastSampleTime = 0;
   const minSampleInterval = 100;
@@ -193,6 +194,7 @@ Thank you again for your time and your valuable contribution to the Virtual UTTO
   let currentStairsLabel = "";
   let repetitionStairsUp = 0;
   let repetitionStairsDown = 0;
+  let lastVectorAngle = 0;
   const counterClockwise = -90;
   const clockwise = 90;
 
@@ -234,7 +236,15 @@ function handleMotion(event) {
   if (label === "stairs_up_down") {
     label = currentStairsLabel || "stairs";
   }
-  const segment = `${label}_${repetition + 1}`;
+ let segment = "";
+  if (label === "stairs_up") {
+    segment = `${label}_${repetitionStairsUp + 1}`;
+  } else if (label === "stairs_down") {
+    segment = `${label}_${repetitionStairsDown + 1}`;
+  } else {
+    segment = `${label}_${repetition + 1}`;
+  }
+
 
   motionData.push([
     time, acc.x ?? "", acc.y ?? "", acc.z ?? "",
@@ -265,6 +275,11 @@ function handleMotion(event) {
     }else{
       document.getElementById("circle-container-right").style.display = "none";
     }
+    if (currentStep == 3) {
+      const vector = document.getElementById("vector-right");
+      vector.style.transition = "none"; // keine Animation
+      vector.style.transform = `rotate(${lastVectorAngle}deg)`; // direkt setzen
+    }
     if (currentStep == 9) {
         document.getElementById("stairs-buttons").style.display = "block";
         document.getElementById("nextButton").style.display = "none";
@@ -273,7 +288,7 @@ function handleMotion(event) {
         document.getElementById("nextButton").style.display = "block";
     }if (currentStep == 9) {
         document.getElementById("counterDisplay").textContent =
-        `Stairs Up: ${repetitionStairsUp} / 10, Down: ${repetitionStairsDown} / 10`;
+        `Stairs Up: ${repetitionStairsUp} / ${step.count}, Down: ${repetitionStairsDown} / ${step.count}`;
     }
 
   }
@@ -293,10 +308,11 @@ function handleMotion(event) {
     }else{
       document.getElementById("circle-container-left").style.display = "none";
     }
-     if(currentStep == 3){
+    if (currentStep == 3) {
       document.getElementById("circle-container-right").style.display = "block";
-      startAnimation(clockwise);
-    }else{
+      startAnimation(clockwise, lastVectorAngle); // übertrage Winkel
+    }
+    else{
       document.getElementById("circle-container-right").style.display = "none";
     }
 
@@ -330,7 +346,12 @@ function handleMotion(event) {
 
  function startStairsMeasurement(label) {
   const progress = document.getElementById("progressBar");
-  const btn = document.getElementById("nextButton");
+  const maxReps = steps[currentStep].count;
+
+  if ((label === "stairs_up" && repetitionStairsUp >= maxReps) ||
+      (label === "stairs_down" && repetitionStairsDown >= maxReps)) {
+    return; // blockiere zu viele Wiederholungen
+  }
 
   currentStairsLabel = label;
   recording = true;
@@ -351,15 +372,20 @@ function handleMotion(event) {
 
     if (label === "stairs_up") {
       repetitionStairsUp++;
+      if (repetitionStairsUp >= maxReps) {
+        document.querySelector('button[onclick*="stairs_up"]').disabled = true;
+      }
     } else if (label === "stairs_down") {
       repetitionStairsDown++;
+      if (repetitionStairsDown >= maxReps) {
+        document.querySelector('button[onclick*="stairs_down"]').disabled = true;
+      }
     }
 
-    // Anzeige aktualisieren
     document.getElementById("counterDisplay").textContent =
-      `Stairs Up: ${repetitionStairsUp} / 10, Down: ${repetitionStairsDown} / 10`;
+      `Stairs Up: ${repetitionStairsUp} / ${maxReps}, Down: ${repetitionStairsDown} / ${maxReps}`;
 
-    if (repetitionStairsUp >= 10 && repetitionStairsDown >= 10) {
+    if (repetitionStairsUp >= maxReps && repetitionStairsDown >= maxReps) {
       repetitionStairsUp = 0;
       repetitionStairsDown = 0;
       currentStep++;
@@ -367,9 +393,6 @@ function handleMotion(event) {
     }
   }, measurementDuration);
 }
-
-
-
 
 
   function downloadCSV() {
@@ -389,20 +412,24 @@ function handleMotion(event) {
     a.click();
     URL.revokeObjectURL(url);
   }
-function startAnimation(rotationAngle) {
+function startAnimation(rotationAngle, initialAngle = null) {
   const label = steps[currentStep].label;
   let vector = null;
   let angle = 0;
 
   if (label === "left") {
-    vector = document.getElementById("vector-left");
+    if (initialAngle !== null) currentAngleLeft = initialAngle;
     currentAngleLeft += rotationAngle;
     angle = currentAngleLeft;
-  } else if (label === "right") {
-    vector = document.getElementById("vector-right");
+    vector = document.getElementById("vector-left");
+  }
+  else if (label === "right") {
+    if (initialAngle !== null) currentAngleRight = initialAngle;
     currentAngleRight += rotationAngle;
     angle = currentAngleRight;
-  } else {
+    vector = document.getElementById("vector-right");
+  }
+ else {
     return; // keine Animation
   }
 
@@ -422,6 +449,7 @@ function startAnimation(rotationAngle) {
       progress.style.transition = `width ${measurementDuration}ms linear`;
     }, 50);
   }, measurementDuration + 50);
+  lastVectorAngle = angle;
 }
 </script>
 </body>
