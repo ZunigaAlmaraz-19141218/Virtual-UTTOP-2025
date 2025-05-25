@@ -1,39 +1,3 @@
-/**
- * @file motion_recorder.js
- * @brief Motion Recorder Web App for Human Movement Data Collection
- *
- * This script powers a web-based tool used for collecting motion data from smartphones
- * during predefined physical activities such as walking, turning, and stair climbing.
- * The motion data is collected via the DeviceMotion API and stored in a CSV format.
- *
- * @details
- * Features:
- * - Interactive HTML interface for test execution with step-by-step guidance
- * - Animations for turning (left/right) with visual vector rotation feedback
- * - Separate controls for stairs up/down activities
- * - DeviceMotion data recording (acceleration and gyroscope)
- * - Downloadable CSV export
- *
- * UI Components:
- * - Setup screen: User enters their name and device model
- * - Experiment sequence with visual instructions and progress bars
- * - Training vectors for rotational steps
- * - Dual-button interface for stair movements
- * - Final download screen with user data export
- *
- * Logic Components:
- * - Steps and repetition logic for guiding the user through fixed test sequences
- * - Rotation angle persistence between left/right visualizations
- * - Recording timing synchronized with visual animations
- * - Labeling and segmenting of data based on action type and repetition
- *
- * Developed as part of the Virtual UTTOP project for motion research and digital twin simulations.
- *
- * @author Sebastian Meyer
- * @date 2025
- * @license MIT
- */
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
