@@ -103,17 +103,31 @@ def process_and_filter_csv(input_dir, filtered_output_file, features_output_file
 
     print(f"All files processed and saved to {filtered_output_file}.")
 
-    # Combine all filtered data and extract features
+    # Combine newly filtered data and extract features
     full_df = pd.concat(all_filtered_data, ignore_index=True)
     features_df = full_df.groupby("segment_id").apply(extract_extended_features).reset_index(drop=True)
 
-    # Encode labels numerically for ML usage
-    le = LabelEncoder()
-    features_df['label_encoded'] = le.fit_transform(features_df['label'])
+    # Extract base label and encode
+    def extract_base_label(label):
+        parts = label.split('_')
+        if parts[-1].isdigit():
+            return '_'.join(parts[:-1])
+        return label
 
-    # Save training dataset
-    features_df.to_csv(features_output_file, index=False)
+    features_df['base_label'] = features_df['label'].apply(extract_base_label)
+    le = LabelEncoder()
+    features_df['label_encoded'] = le.fit_transform(features_df['base_label'])
+
+    # Merge with existing training dataset if it exists
+    if os.path.exists(features_output_file):
+        existing = pd.read_csv(features_output_file)
+        combined = pd.concat([existing, features_df], ignore_index=True)
+        combined.to_csv(features_output_file, index=False)
+    else:
+        features_df.to_csv(features_output_file, index=False)
+
     print(f"Feature dataset saved to {features_output_file}.")
+
 
 # Paths
 input_directory = "toDoFilterData"
