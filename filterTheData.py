@@ -7,6 +7,25 @@ from sklearn.preprocessing import LabelEncoder
 def moving_average(series, window_size=5):
     return series.rolling(window=window_size, center=True, min_periods=1).mean()
 
+# Function: Extract label counters from existing file
+def get_label_counters(existing_file):
+    counters = {}
+    if os.path.exists(existing_file):
+        try:
+            existing_df = pd.read_csv(existing_file)
+            if 'label' in existing_df.columns:
+                for label in existing_df['label']:
+                    if '_' in label:
+                        parts = label.split('_')
+                        if parts[-1].isdigit():
+                            base = '_'.join(parts[:-1])
+                            num = int(parts[-1])
+                            if base not in counters or num > counters[base]:
+                                counters[base] = num
+        except Exception as e:
+            print("Could not read existing file for label counting:", e)
+    return counters
+
 # Feature extraction for each segment
 def extract_extended_features(segment):
     return pd.Series({
@@ -34,6 +53,7 @@ def process_and_filter_csv(input_dir, filtered_output_file, features_output_file
         print("No CSV files found in the directory.")
         return
 
+    label_counters = get_label_counters(filtered_output_file)
     all_filtered_data = []
 
     for file_name in files:
@@ -46,19 +66,38 @@ def process_and_filter_csv(input_dir, filtered_output_file, features_output_file
             print(f"UTF-8 failed for {file_name}, trying ISO-8859-1")
             df = pd.read_csv(file_path, encoding='ISO-8859-1')
 
+        sensor_cols = ['acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
+        df_filtered = df.copy()
 
-        # Apply moving average filter to sensor axes
-        for col in ['acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']:
-            if col in df.columns:
-                df[col] = moving_average(df[col])
+        # Segmentweise Filter + Label-Nummerierung
+        for segment_id, segment_df in df.groupby('segment_id'):
+            for col in sensor_cols:
+                if col in segment_df.columns:
+                    df_filtered.loc[segment_df.index, col] = moving_average(segment_df[col])
+            
+            # Robuste Label-Basisbestimmung
+            original_label = segment_df['label'].iloc[0]
+            if '_' in original_label:
+                parts = original_label.split('_')
+                if parts[-1].isdigit():
+                    base_label = '_'.join(parts[:-1])
+                else:
+                    base_label = original_label
+            else:
+                base_label = original_label
 
-        # Append filtered data to output file, or create new if it doesn't exist
+            # Zähler erhöhen & neues Label setzen
+            label_counters[base_label] = label_counters.get(base_label, 0) + 1
+            new_label = f"{base_label}_{label_counters[base_label]}"
+            df_filtered.loc[segment_df.index, 'label'] = new_label
+
+        # Gefilterte Daten speichern
         if os.path.exists(filtered_output_file):
-            df.to_csv(filtered_output_file, mode='a', index=False, header=False)
+            df_filtered.to_csv(filtered_output_file, mode='a', index=False, header=False)
         else:
-            df.to_csv(filtered_output_file, index=False)
+            df_filtered.to_csv(filtered_output_file, index=False)
 
-        all_filtered_data.append(df)
+        all_filtered_data.append(df_filtered)
         os.remove(file_path)
         print(f"{file_name} has been deleted.")
 
