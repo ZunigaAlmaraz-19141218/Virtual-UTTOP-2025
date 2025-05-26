@@ -1,0 +1,95 @@
+Motion Recorder Web App Documentation
+
+Overview:
+This JavaScript-based web application guides users through a set of predefined physical movements (e.g., turning, walking, climbing stairs) while holding their smartphones. The app records motion data from the device's sensors and allows users to export the recorded data as a CSV file. It also provides a visual animation aid for left and right turning steps.
+
+Features:
+
+Step-by-step user instructions for movement tasks
+
+Real-time data recording using the device's accelerometer and gyroscope
+
+Dynamic progress bar visualization during measurements
+
+Left and right turn animation (vector on a unit circle)
+
+Dual-button interface for stairs up and down step
+
+CSV export of motion data with labels
+
+Step Flow:
+
+Setup Page:
+
+Input fields for name and smartphone model
+
+Introductory instructions and safety hints
+
+Button to start the experiment
+
+Experiment Steps:
+
+Each step corresponds to a specific label: left, right, forward, backward, stairs_up, stairs_down, wait
+
+The user performs each movement after reading the instructions and pressing a button
+
+For left and right, animations assist user visualization
+
+For stairs_up_down, separate buttons are shown for stairs_up and stairs_down
+
+Animation Logic:
+
+A red vector rotates around a unit circle
+
+The left turn rotates counterclockwise (-90°), right turn clockwise (+90°)
+
+The angle persists between steps; right turn continues from the end of left turn
+
+Data Recording:
+
+Accelerometer and gyroscope values are recorded at intervals
+
+Data is labeled with the movement type and repetition number
+
+Data is appended to a motionData array
+
+Stairs Step Handling:
+
+The stairs_up_down step combines two separate buttons
+
+Each button increases its own counter (max repetitions = defined count)
+
+The user must complete both before the step is marked as done
+
+CSV Export:
+
+After all steps are completed, the user can download the CSV
+
+File includes columns: time_ms, acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z, label, segment_id
+
+Implementation Notes:
+
+Animation angles are stored in currentAngleLeft, currentAngleRight, and lastVectorAngle
+
+startAnimation(angle, initialAngle) updates the angle and animates the vector accordingly
+
+Device motion permissions must be requested explicitly on iOS
+
+DOM elements are shown or hidden based on currentStep in updateStepDisplay()
+
+Separate repetition counters are maintained for stairs_up and stairs_down
+
+The Start Measurement button is hidden during the stairs step to avoid conflict
+
+Possible Enhancements:
+
+Validation for sensor availability before starting
+
+Timer visualization (countdown or chronometer)
+
+Audio cues during movement steps
+
+Server-side submission instead of local CSV
+
+End of Documentation
+
