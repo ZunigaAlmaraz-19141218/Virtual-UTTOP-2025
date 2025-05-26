@@ -2,65 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ENIT Campus Navigation</title>
+  <title>ENIT Campus Navigation 2D</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Leaflet & Routing CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
-  <!-- Turf.js for spatial ops -->
+  <!-- Turf.js para geometría -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Segoe UI',Arial,sans-serif; background:#f7f9fa; color:#333; }
-    #controls {
-      background:#0055A4; color:#fff;
-      display:flex; flex-wrap:wrap; align-items:center; gap:8px;
-      padding:12px 16px;
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f7f9fa;color:#333;}
+    #controls{
+      background:#0055A4;color:#fff;
+      display:flex;flex-wrap:wrap;align-items:center;gap:clamp(6px,1vw,12px);
+      padding:clamp(8px,2vw,16px);
     }
     #controls button,
     #controls select,
-    #controls input {
-      font-size:clamp(12px,1.4vw,16px);
-      border:none; border-radius:4px; padding:6px 10px;
+    #controls input{
+      font-size:clamp(12px,1.2vw,16px);
+      border:none;border-radius:4px;padding:6px 10px;
     }
-    #controls button { background:#FFD700; color:#0055A4; cursor:pointer; }
-    #controls button:hover { background:#e6c200; }
-    #map2D { width:100%; height:60vh; border-top:2px solid #ddd; border-bottom:2px solid #ddd; }
-    #errorBanner {
-      display:none; background:#f8d7da; color:#721c24;
-      padding:8px; text-align:center;
+    #controls button{
+      background:#FFD700;color:#0055A4;cursor:pointer;
+      transition:background .2s;
     }
-    #info {
-      padding:12px; background:#fff; border-top:1px solid #ddd;
-      font-size:14px;
+    #controls button:hover{background:#e6c200;}
+    #map2D{width:100%;height:60vh;border-top:2px solid #ddd;border-bottom:2px solid #ddd;}
+    #errorBanner{
+      display:none;background:#f8d7da;color:#721c24;
+      padding:8px;text-align:center;
     }
-    .directions-box {
-      background:#fff; padding:12px; border:1px solid #ddd;
-      border-top:none; max-height:25vh; overflow-y:auto;
-      font-size:14px;
+    #info{
+      padding:12px;background:#fff;border-top:1px solid #ddd;font-size:14px;
     }
-    .directions-box li.current { background:rgba(255,215,0,0.3); }
-    /* Google-style user marker */
-    .user-marker {
-      width:18px; height:18px;
-      background:rgba(0,123,255,0.2);
-      border-radius:50%;
-      position:relative;
+    .directions-box{
+      background:#fff;padding:12px;border:1px solid #ddd;border-top:none;
+      max-height:25vh;overflow-y:auto;font-size:14px;
     }
-    .user-marker .inner {
-      width:10px; height:10px;
-      background:#007bff; border-radius:50%;
-      position:absolute; top:50%; left:50%;
-      transform:translate(-50%,-50%);
+    .directions-box li.current{background:rgba(255,215,0,0.3);}
+    /* Marcador estilo Google Maps */
+    .user-marker{
+      width:18px;height:18px;position:relative;
     }
-    .user-marker .arrow {
-      position:absolute;
-      top:-4px; left:50%;
-      width:0; height:0;
+    .user-marker .inner{
+      width:10px;height:10px;
+      background:#007bff;border-radius:50%;
+      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    }
+    .user-marker .arrow{
+      position:absolute;top:-2px;left:50%;
+      width:0;height:0;
       border:6px solid transparent;
       border-bottom-color:#007bff;
       transform-origin:center bottom;
-      transform:translateX(-50%) rotate(0deg);
+      transition:transform .2s ease-out;
     }
   </style>
 </head>
@@ -159,46 +155,30 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
   <script>
-    // Friendly banner
+    // ---------- utilidades ----------
     function showBanner(msg){
-      const b = document.getElementById('errorBanner');
-      b.textContent = msg; b.style.display = 'block';
-      clearTimeout(b._t);
-      b._t = setTimeout(()=> b.style.display='none',3000);
+      const b=document.getElementById('errorBanner');
+      b.textContent=msg; b.style.display='block';
+      clearTimeout(b._t); b._t=setTimeout(()=>b.style.display='none',3000);
     }
 
-    // Campus bounds & poly
-    const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
-    const campusPoly = turf.polygon([[ 
+    // campus bounds & polygon
+    const campusBounds=[[43.2235,0.0459],[43.2280,0.0536]];
+    const campusPoly=turf.polygon([[
       [0.0459,43.2235],[0.0536,43.2235],
-      [0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]
+      [0.0536,43.2280],[0.0459,43.2280],
+      [0.0459,43.2235]
     ]]);
 
-    // Initialize 2D map
-    const map2D = L.map('map2D',{
-      center:[43.22476,0.05044],zoom:18,
-      minZoom:17,maxZoom:20,maxBounds:campusBounds
-    });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'© OpenStreetMap',maxZoom:20
-    }).addTo(map2D);
-
-    // All campus locations
-    const locations = {
-      entrance:[43.225018,0.052059],
-      library:[43.224945,0.051151],
-      cafeteria:[43.227491,0.050948],
-      gym:[43.225022,0.050141],
-      building_a:[43.225121,0.051905],
-      building_b:[43.225188,0.051330],
-      building_c:[43.224918,0.050762],
-      building_d:[43.224511,0.051267],
-      building_i:[43.225722,0.050753],
-      building_j:[43.226148,0.050630],
-      building_k:[43.226481,0.050634],
-      building_m:[43.223988,0.050028],
-      building_iufm:[43.224808,0.049464],
-      Observatory_Midi_Pyrenees:[43.223953,0.049200],
+    // coordenadas fijas
+    const locations={
+      entrance:[43.225018,0.052059],library:[43.224945,0.051151],
+      cafeteria:[43.227491,0.050948],gym:[43.225022,0.050141],
+      building_a:[43.225121,0.051905],building_b:[43.225188,0.051330],
+      building_c:[43.224918,0.050762],building_d:[43.224511,0.051267],
+      building_i:[43.225722,0.050753],building_j:[43.226148,0.050630],
+      building_k:[43.226481,0.050634],building_m:[43.223988,0.050028],
+      building_iufm:[43.224808,0.049464],Observatory_Midi_Pyrenees:[43.223953,0.049200],
       Département_Génie_Électrique_et_InformatiqueIndustrielle:[43.225952,0.048409],
       Département_Techniques_de_Commercialisation:[43.226238,0.049283],
       Département_Génie_Mécanique_et_Productique:[43.226579,0.047749],
@@ -206,121 +186,125 @@
       Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143],
       Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
       Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],
-      laboratory_l0:[43.225374,0.050196],
-      laboratory_l1:[43.225663,0.050199],
-      laboratory_l2:[43.225945,0.050215],
-      laboratory_l3:[43.226115,0.050229],
+      laboratory_l0:[43.225374,0.050196],laboratory_l1:[43.225663,0.050199],
+      laboratory_l2:[43.225945,0.050215],laboratory_l3:[43.226115,0.050229],
       laboratory_l4:[43.226295,0.050246]
     };
 
+    // inicialización mapa
+    const map2D=L.map('map2D',{
+      center:[43.22476,0.05044],zoom:18,
+      minZoom:17,maxZoom:20,maxBounds:campusBounds
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OSM',maxZoom:20
+    }).addTo(map2D);
+
     let marker2D, watchId, routingControl, routeCoords, instructions=[];
 
-    // Start GPS tracking + small heading arc
+    // GPS & suavizado 
+    let smoothLat=0, smoothLon=0, first=true;
     function startTracking(){
-      if(!navigator.geolocation) return showBanner('Geolocation not supported');
-      navigator.geolocation.getCurrentPosition(
-        ()=>{}, e=>showBanner('Allow location access'), {timeout:10000}
-      );
+      if(!navigator.geolocation) return showBanner('No GPS');
+      navigator.geolocation.getCurrentPosition(()=>{},()=>showBanner('Allow location'),{timeout:10000});
       if(watchId) navigator.geolocation.clearWatch(watchId);
-      watchId = navigator.geolocation.watchPosition(p=>{
-        const {latitude:lat,longitude:lon,accuracy,altitude:alt,heading} = p.coords;
-
-        // Create or move user marker
+      watchId=navigator.geolocation.watchPosition(p=>{
+        let {latitude:lat,longitude:lon,accuracy,altitude:alt,heading}=p.coords;
+        if(accuracy>100) return;  // ignorar muy impreciso
+        // suavizado exponencial
+        if(first){ smoothLat=lat; smoothLon=lon; first=false; }
+        else {
+          const α=0.3;
+          smoothLat=smoothLat*(1-α)+lat*α;
+          smoothLon=smoothLon*(1-α)+lon*α;
+        }
+        const pos=[smoothLat,smoothLon];
+        // marcador custom sin halo
         if(!marker2D){
-          marker2D = L.marker([lat, lon], {
-            icon: L.divIcon({
+          marker2D=L.marker(pos,{
+            icon:L.divIcon({
               className:'user-marker',
-              html:`<div class="inner"></div><div class="arrow"></div>`,
-              iconSize:[24,24], iconAnchor:[12,12]
+              html:'<div class="inner"></div><div class="arrow"></div>',
+              iconSize:[24,24],iconAnchor:[12,12]
             })
           }).addTo(map2D);
         } else {
-          marker2D.setLatLng([lat, lon]);
+          marker2D.setLatLng(pos);
         }
-
-        // Rotate arrow to heading
+        // rotar flecha
         if(heading!=null){
           marker2D.getElement().querySelector('.arrow')
-            .style.transform = `translateX(-50%) rotate(${heading}deg)`;
+            .style.transform=`translateX(-50%) rotate(${heading}deg)`;
         }
+        map2D.setView(pos,map2D.getZoom());
 
-        // Center map
-        map2D.setView([lat, lon], map2D.getZoom());
-
-        // Info panel
+        // panel info
         let floor='Unknown';
         if(alt!=null){
-          let d = alt - 312;
-          floor = d<2?'Ground': d<4?'First':'Upper';
+          let d=alt-312;
+          floor=d<2?'Ground':d<4?'First':'Upper';
         }
-        document.getElementById('info').innerHTML = `
-          <strong>Lat:</strong> ${lat.toFixed(6)}<br>
-          <strong>Lon:</strong> ${lon.toFixed(6)}<br>
-          <strong>Alt:</strong> ${alt!=null?alt.toFixed(1)+' m':'—'}<br>
-          <strong>Acc:</strong> ±${accuracy.toFixed(1)} m<br>
-          <strong>Floor:</strong> ${floor}
+        document.getElementById('info').innerHTML=`
+          Lat: ${smoothLat.toFixed(6)}<br>
+          Lon: ${smoothLon.toFixed(6)}<br>
+          Alt: ${alt!=null?alt.toFixed(1)+' m':'—'}<br>
+          Acc: ±${accuracy.toFixed(1)} m<br>
+          Flr: ${floor}
         `;
-
-        // Highlight current step
+        // actualizar paso activo
         if(instructions.length){
-          const pt = turf.point([lon,lat]);
-          let best=0, bd=Infinity;
+          let pt=turf.point([smoothLon,smoothLat]),best=0,bd=Infinity;
           instructions.forEach((i,idx)=>{
-            const d = turf.distance(pt, turf.point([i.latLng.lng,i.latLng.lat]),{units:'meters'});
-            if(d<bd){ bd=d; best=idx; }
+            let d=turf.distance(pt,turf.point([i.latLng.lng,i.latLng.lat]),{units:'meters'});
+            if(d<bd){bd=d;best=idx;}
           });
           document.querySelectorAll('#stepsList li').forEach(li=>li.classList.remove('current'));
           document.getElementById(`step-${best}`).classList.add('current');
-          document.getElementById('stepsHeader').textContent = `Steps (${best+1}/${instructions.length})`;
+          document.getElementById('stepsHeader').textContent=`Steps (${best+1}/${instructions.length})`;
         }
-      },err=>showBanner(`GPS error: ${err.message}`),{
-        enableHighAccuracy:true,timeout:5000,maximumAge:0
-      });
+      },err=>showBanner(err.message),{enableHighAccuracy:true,timeout:5000,maximumAge:0});
     }
 
-    // Live filter
+    // filtro selects
     function filterList(){
-      const txt = document.getElementById('searchBox').value.toLowerCase();
+      const t=document.getElementById('searchBox').value.toLowerCase();
       ['origin','destination'].forEach(id=>{
         Array.from(document.getElementById(id).options)
-          .forEach(o=>o.style.display = o.text.toLowerCase().includes(txt)?'block':'none');
+          .forEach(o=>o.style.display=o.text.toLowerCase().includes(t)?'block':'none');
       });
     }
 
-    // Draw 2D route
+    // ruta & pasos
     function drawRoute(){
-      const oKey = document.getElementById('origin').value;
-      const dKey = document.getElementById('destination').value;
-      if(!dKey) return showBanner('Select a destination');
-
-      let originLL = oKey==='gps'
-        ? (marker2D?marker2D.getLatLng():null)
+      const oKey=document.getElementById('origin').value,
+            dKey=document.getElementById('destination').value;
+      if(!dKey) return showBanner('Select dest');
+      const oLL=oKey==='gps'
+        ? marker2D&&marker2D.getLatLng()
         : L.latLng(...locations[oKey]);
-      if(!originLL) return showBanner('Start GPS or pick origin');
-
-      const destLL = L.latLng(...locations[dKey]);
+      if(!oLL) return showBanner('Start GPS or pick origin');
+      const dLL=L.latLng(...locations[dKey]);
       if(routingControl) map2D.removeControl(routingControl);
-
-      routingControl = L.Routing.control({
-        router: L.Routing.osrmv1({
+      routingControl=L.Routing.control({
+        router:L.Routing.osrmv1({
           serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1',
           profile:'foot'
         }),
-        waypoints:[ originLL, destLL ],
-        fitSelectedRoutes:true, show:false,
-        routeWhileDragging:false, addWaypoints:false,
+        waypoints:[oLL,dLL],
+        fitSelectedRoutes:true,show:false,
+        addWaypoints:false,routeWhileDragging:false,
         createMarker:()=>null,
-        lineOptions:{ styles:[{color:'#0055A4',weight:5}] }
+        lineOptions:{styles:[{color:'#0055A4',weight:5}]}
       })
       .on('routesfound',e=>{
-        const r = e.routes[0];
-        routeCoords = r.coordinates.map(c=>[c.lng,c.lat]);
-        instructions = r.instructions;
+        const r=e.routes[0];
+        routeCoords=r.coordinates.map(c=>[c.lng,c.lat]);
+        instructions=r.instructions;
         if(routeCoords.some(c=>!turf.booleanPointInPolygon(turf.point(c),campusPoly))){
-          return showBanner('Route exits campus bounds');
+          return showBanner('Exits campus bounds');
         }
-        document.getElementById('stepsHeader').textContent = `Steps (1/${instructions.length})`;
-        document.getElementById('stepsList').innerHTML =
+        document.getElementById('stepsHeader').textContent=`Steps (1/${instructions.length})`;
+        document.getElementById('stepsList').innerHTML=
           instructions.map((i,idx)=>`<li id="step-${idx}">${i.text}</li>`).join('');
       })
       .on('routingerror',()=>showBanner('Routing error'))
