@@ -42,7 +42,7 @@
       max-height:25vh;overflow-y:auto;font-size:14px;
     }
     .directions-box li.current{background:rgba(255,215,0,0.3);}
-    /* Google-like user marker */
+    
     .user-marker{width:18px;height:18px;position:relative;}
     .user-marker .inner{
       width:10px;height:10px;background:#007bff;border-radius:50%;
@@ -81,7 +81,7 @@
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
   <script>
-  // — Helpers —
+  //  Helpers
   const $ = id => document.getElementById(id);
   function showBanner(msg) {
     const b=$('errorBanner');
@@ -94,14 +94,14 @@
     return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms) };
   }
 
-  // — Campus bounds & polygon —
+  // Campus bounds & polygon 
   const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
   const campusPoly = turf.polygon([[ 
     [0.0459,43.2235],[0.0536,43.2235],
     [0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]
   ]]);
 
-  // — Fixed locations —
+  //  Fixed locations 
   const locations = {
     entrance:[43.225018,0.052059], library:[43.224945,0.051151],
     cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
@@ -123,7 +123,7 @@
     laboratory_l4:[43.226295,0.050246]
   };
 
-  // — Dynamically fill origin/destination selects —
+  // Dynamically fill origin/destination selects 
   const fill = id => {
     let sel=$(id);
     sel.innerHTML = `<option value="gps">My Location</option>`;
@@ -146,7 +146,7 @@
   };
   fill('origin'); fill('destination');
 
-  // — Initialize map — renderer canvas for perf —
+  // Initialize map
   const map2D = L.map('map2D',{
     center:[43.22476,0.05044],zoom:18,
     minZoom:17,maxZoom:19,maxBounds:campusBounds,
@@ -156,11 +156,11 @@
     attribution:'© OpenStreetMap',maxZoom:19
   }).addTo(map2D);
 
-  // — Globals —
+  // Globals
   let marker2D, watchId, routingControl, instructions=[];
   let smoothLat, smoothLon, first=true, frameCnt=0;
 
-  // — Start GPS button — 
+  // Start GPS button
   $('btnStartGPS').addEventListener('click',()=>{
     if(!navigator.geolocation) return showBanner('Geolocation not supported');
     navigator.geolocation.getCurrentPosition(()=>{},()=>showBanner('Allow location'),{timeout:5000});
@@ -171,11 +171,11 @@
   });
 
   function onPos({coords:{latitude:lat,longitude:lon,accuracy,altitude:alt,heading}}){
-    if(accuracy>100) return;             // drop very imprecise
+    if(accuracy>100) return;             
     if(first){
       smoothLat=lat; smoothLon=lon; first=false;
     } else {
-      const α=0.4;                       // slightly faster tracking
+      const α=0.4;                       
       smoothLat = smoothLat*(1-α)+lat*α;
       smoothLon = smoothLon*(1-α)+lon*α;
     }
@@ -215,7 +215,7 @@
     if(instructions.length) requestAnimationFrame(highlightStep);
   }
 
-  // — Filter logic —
+  // Filter logic 
   $('searchBox').addEventListener('input', debounce(()=>{
     const t=$('searchBox').value.toLowerCase();
     ['origin','destination'].forEach(id=>{
@@ -225,7 +225,7 @@
     });
   },100));
 
-  // — Draw route + save instructions —
+  // Draw route + save instructions 
   $('btnGo').addEventListener('click', ()=>{
     const oKey=$('origin').value, dKey=$('destination').value;
     if(!dKey) return showBanner('Select a destination');
@@ -247,7 +247,7 @@
         !turf.booleanPointInPolygon(turf.point([c.lng,c.lat]),campusPoly)
       )) return showBanner('Route exits campus bounds');
       instructions = r.instructions;
-      $('stepsHeader').textContent = `Steps (1/${instructions.length})`;
+      $('stepsHeader').textContent = `Steps`;
       $('stepsList').innerHTML = instructions.map((i,idx)=>
         `<li id="step-${idx}">${i.text}</li>`
       ).join('');
@@ -256,7 +256,7 @@
     .addTo(map2D);
   });
 
-  // — Highlight nearest step — 
+  // Highlight nearest step 
   function highlightStep(){
     if(!marker2D) return;
     const pos=marker2D.getLatLng();
