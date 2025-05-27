@@ -30,7 +30,7 @@ class MotionRecorder {
       { label: "wait", count: 3 },
     ];
 
-    this.measurementDuration = 200;
+    this.measurementDuration = 2900;
     this.minSampleInterval = 100;
     this.counterClockwise = -90;
     this.clockwise = 90;
@@ -237,6 +237,7 @@ class MotionRecorder {
         this.repetitionStairsUp = 0;
         this.repetitionStairsDown = 0;
         this.currentStep++;
+        this.repetition = 0;
         this.updateStepDisplay();
       }
     }, this.measurementDuration);
