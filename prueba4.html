@@ -7,14 +7,15 @@
   <!-- Leaflet & Routing CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
-  <!-- Turf.js (debe ir antes de tu script) -->
+  <!-- Turf.js must load before our script -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:#f7f9fa;color:#333;}
     #controls{
       background:#0055A4;color:#fff;
-      display:flex;flex-wrap:wrap;align-items:center;gap:clamp(6px,1vw,12px);
+      display:flex;flex-wrap:wrap;align-items:center;
+      gap:clamp(6px,1vw,12px);
       padding:clamp(8px,2vw,16px);
     }
     #controls button,
@@ -41,7 +42,7 @@
       max-height:25vh;overflow-y:auto;font-size:14px;
     }
     .directions-box li.current{background:rgba(255,215,0,0.3);}
-    /* Style Marker */
+    /* Google-like user marker */
     .user-marker{width:18px;height:18px;position:relative;}
     .user-marker .inner{
       width:10px;height:10px;background:#007bff;border-radius:50%;
@@ -56,13 +57,13 @@
 </head>
 <body>
 
-  <div id="controls" role="region" aria-label="Map controls">
+  <div id="controls">
     <button id="btnStartGPS">Start GPS</button>
-    <label for="searchBox">Filter:</label>
+    <label>Filter:</label>
     <input id="searchBox" placeholder="Type to filter…" />
-    <label for="origin">Start From:</label>
+    <label>Start From:</label>
     <select id="origin"></select>
-    <label for="destination">Go To:</label>
+    <label>Go To:</label>
     <select id="destination"></select>
     <button id="btnGo">Go</button>
   </div>
@@ -80,25 +81,27 @@
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
   <script>
-  // — Utilidades —
+  // — Helpers —
+  const $ = id => document.getElementById(id);
   function showBanner(msg) {
-    const b = document.getElementById('errorBanner');
-    b.textContent = msg; b.style.display = 'block';
-    clearTimeout(b._t); b._t = setTimeout(()=> b.style.display = 'none', 3000);
+    const b=$('errorBanner');
+    b.textContent=msg; b.style.display='block';
+    clearTimeout(b._t);
+    b._t = setTimeout(()=> b.style.display='none', 3000);
   }
   function debounce(fn, ms=100) {
     let t;
-    return (...args)=>{ clearTimeout(t); t = setTimeout(()=> fn(...args), ms); };
+    return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms) };
   }
 
-  // — Campus bounds & poly —
-  const campusBounds = [[43.2235, 0.0459], [43.2280, 0.0536]];
+  // — Campus bounds & polygon —
+  const campusBounds = [[43.2235,0.0459],[43.2280,0.0536]];
   const campusPoly = turf.polygon([[ 
     [0.0459,43.2235],[0.0536,43.2235],
     [0.0536,43.2280],[0.0459,43.2280],[0.0459,43.2235]
   ]]);
 
-  // — Ubicaciones fijas —
+  // — Fixed locations —
   const locations = {
     entrance:[43.225018,0.052059], library:[43.224945,0.051151],
     cafeteria:[43.227491,0.050948], gym:[43.225022,0.050141],
@@ -115,16 +118,14 @@
     Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143],
     Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
     Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],
-    laboratory_l0:[43.225374,0.050196],
-    laboratory_l1:[43.225663,0.050199],
-    laboratory_l2:[43.225945,0.050215],
-    laboratory_l3:[43.226115,0.050229],
+    laboratory_l0:[43.225374,0.050196], laboratory_l1:[43.225663,0.050199],
+    laboratory_l2:[43.225945,0.050215], laboratory_l3:[43.226115,0.050229],
     laboratory_l4:[43.226295,0.050246]
   };
 
-  // — Poblamos los <select> dinámicamente —
-  function fillSelect(id) {
-    const sel = document.getElementById(id);
+  // — Dynamically fill origin/destination selects —
+  const fill = id => {
+    let sel=$(id);
     sel.innerHTML = `<option value="gps">My Location</option>`;
     const groups = {
       "General Facilities":["entrance","library","cafeteria","gym"],
@@ -132,83 +133,77 @@
       "Departments & Residence":["Département_Génie_Électrique_et_InformatiqueIndustrielle","Département_Techniques_de_Commercialisation","Département_Génie_Mécanique_et_Productique","Département_Gestion_des_Entreprises_et_des_Administrations","Département_Métiers_du_Multimédia_et_de_lInternet","Département_Génie_Civil_Construction_Durable","Résidence_Universitaire_Simone_Veil"],
       "Laboratories":["laboratory_l0","laboratory_l1","laboratory_l2","laboratory_l3","laboratory_l4"]
     };
-    for (let label in groups) {
-      const og = document.createElement('optgroup'); og.label = label;
-      groups[label].forEach(key=>{
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = key.replace(/_/g,' ');
-        og.appendChild(opt);
+    for (let label in groups){
+      let og=document.createElement('optgroup');
+      og.label=label;
+      groups[label].forEach(k=>{
+        let o=document.createElement('option');
+        o.value=k; o.textContent=k.replace(/_/g,' ');
+        og.appendChild(o);
       });
       sel.appendChild(og);
     }
-  }
-  fillSelect('origin');
-  fillSelect('destination');
+  };
+  fill('origin'); fill('destination');
 
-  // — Inicialización del mapa —
+  // — Initialize map — renderer canvas for perf —
   const map2D = L.map('map2D',{
-    center:[43.22476,0.05044], zoom:18,
-    minZoom:17, maxZoom:19, maxBounds:campusBounds,
-    renderer: L.canvas()
+    center:[43.22476,0.05044],zoom:18,
+    minZoom:17,maxZoom:19,maxBounds:campusBounds,
+    renderer:L.canvas()
   });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© OpenStreetMap', maxZoom:19
+    attribution:'© OpenStreetMap',maxZoom:19
   }).addTo(map2D);
 
-  // — Variables globales —
-  let marker2D, watchId, routingControl, instructions = [];
-  let smoothLat, smoothLon, first = true, frameCnt = 0;
+  // — Globals —
+  let marker2D, watchId, routingControl, instructions=[];
+  let smoothLat, smoothLon, first=true, frameCnt=0;
 
-  // — Start GPS —
-  document.getElementById('btnStartGPS')
-    .addEventListener('click', startTracking);
-  function startTracking() {
-    if (!navigator.geolocation) return showBanner('Geolocation not supported');
-    navigator.geolocation.getCurrentPosition(()=>{},()=>showBanner('Allow location'),{timeout:10000});
-    if (watchId) navigator.geolocation.clearWatch(watchId);
+  // — Start GPS button — 
+  $('btnStartGPS').addEventListener('click',()=>{
+    if(!navigator.geolocation) return showBanner('Geolocation not supported');
+    navigator.geolocation.getCurrentPosition(()=>{},()=>showBanner('Allow location'),{timeout:5000});
+    if(watchId) navigator.geolocation.clearWatch(watchId);
     watchId = navigator.geolocation.watchPosition(onPos, e=>showBanner(e.message), {
-      enableHighAccuracy:true, maximumAge:200, timeout:5000
+      enableHighAccuracy:true, maximumAge:0, timeout:5000
     });
-  }
+  });
 
-  function onPos({coords:{latitude:lat,longitude:lon,accuracy,altitude:alt,heading}}) {
-    if (accuracy > 100) return;
-    if (first) {
-      smoothLat = lat; smoothLon = lon; first = false;
+  function onPos({coords:{latitude:lat,longitude:lon,accuracy,altitude:alt,heading}}){
+    if(accuracy>100) return;             // drop very imprecise
+    if(first){
+      smoothLat=lat; smoothLon=lon; first=false;
     } else {
-      const α = 0.3;
-      smoothLat = smoothLat*(1-α) + lat*α;
-      smoothLon = smoothLon*(1-α) + lon*α;
+      const α=0.4;                       // slightly faster tracking
+      smoothLat = smoothLat*(1-α)+lat*α;
+      smoothLon = smoothLon*(1-α)+lon*α;
     }
-    // throttling ~15fps
-    if (++frameCnt % 3 !== 0) return;
-    const pos = [smoothLat,smoothLon];
+    // throttle ~15fps
+    if(++frameCnt%3!==0) return;
+    const p=[smoothLat,smoothLon];
 
-    if (!marker2D) {
-      marker2D = L.marker(pos, {
-        icon: L.divIcon({
-          className:'user-marker',
-          html:'<div class="inner"></div><div class="arrow"></div>',
-          iconSize:[24,24], iconAnchor:[12,12]
-        })
-      }).addTo(map2D);
+    if(!marker2D){
+      marker2D=L.marker(p,{icon:L.divIcon({
+        className:'user-marker',
+        html:'<div class="inner"></div><div class="arrow"></div>',
+        iconSize:[24,24],iconAnchor:[12,12]
+      })}).addTo(map2D);
     } else {
-      marker2D.setLatLng(pos);
+      marker2D.setLatLng(p);
     }
-    if (heading != null) {
+    if(heading!=null){
       marker2D.getElement().querySelector('.arrow')
-        .style.transform = `translateX(-50%) rotate(${heading}deg)`;
+        .style.transform=`translateX(-50%) rotate(${heading}deg)`;
     }
-    map2D.setView(pos, map2D.getZoom());
+    map2D.setView(p,map2D.getZoom());
 
-    // Panel info
-    let floor = 'Unknown';
-    if (alt != null) {
-      let d = alt - 312;
-      floor = d<2?'Ground':d<4?'First':'Upper';
+    // info panel
+    let floor='Unknown';
+    if(alt!=null){
+      let d=alt-312; floor=d<2?'Ground':d<4?'First':'Upper';
     }
-    document.getElementById('info').innerHTML = `
+    $('info').innerHTML=`
       Lat: ${smoothLat.toFixed(6)}<br>
       Lon: ${smoothLon.toFixed(6)}<br>
       Alt: ${alt!=null?alt.toFixed(1)+' m':'—'}<br>
@@ -216,85 +211,68 @@
       Flr: ${floor}
     `;
 
-    // Resaltar paso más cercano
-    if (instructions.length) {
-      requestAnimationFrame(highlightStep);
-    }
+    // highlight nearest step
+    if(instructions.length) requestAnimationFrame(highlightStep);
   }
 
-  // — Filtrar selects —
-  document.getElementById('searchBox')
-    .addEventListener('input', debounce(()=>{
-      const t = document.getElementById('searchBox').value.toLowerCase();
-      ['origin','destination'].forEach(id=>{
-        Array.from(document.getElementById(id).options)
-          .forEach(o=> o.style.display = o.text.toLowerCase().includes(t)?'block':'none');
+  // — Filter logic —
+  $('searchBox').addEventListener('input', debounce(()=>{
+    const t=$('searchBox').value.toLowerCase();
+    ['origin','destination'].forEach(id=>{
+      Array.from($(id).options).forEach(o=>{
+        o.style.display = o.text.toLowerCase().includes(t) ? 'block' : 'none';
       });
-    },100));
+    });
+  },100));
 
-  // — Dibujar ruta y almacenar instrucciones —
-  document.getElementById('btnGo')
-    .addEventListener('click', drawRoute);
-  function drawRoute(){
-    const oKey = document.getElementById('origin').value;
-    const dKey = document.getElementById('destination').value;
-    if (!dKey) return showBanner('Select a destination');
-    const oLL = oKey === 'gps'
-      ? marker2D && marker2D.getLatLng()
-      : L.latLng(...locations[oKey]);
-    if (!oLL) return showBanner('Start GPS or pick origin');
+  // — Draw route + save instructions —
+  $('btnGo').addEventListener('click', ()=>{
+    const oKey=$('origin').value, dKey=$('destination').value;
+    if(!dKey) return showBanner('Select a destination');
+    const oLL = oKey==='gps' ? marker2D&&marker2D.getLatLng() : L.latLng(...locations[oKey]);
+    if(!oLL) return showBanner('Start GPS or pick origin');
     const dLL = L.latLng(...locations[dKey]);
-
-    if (routingControl) map2D.removeControl(routingControl);
+    if(routingControl) map2D.removeControl(routingControl);
     routingControl = L.Routing.control({
-      router: L.Routing.osrmv1({
-        serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1',
-        profile:'foot'
-      }),
+      router:L.Routing.osrmv1({ serviceUrl:'https://routing.openstreetmap.de/routed-foot/route/v1', profile:'foot' }),
       waypoints:[oLL,dLL],
-      fitSelectedRoutes:true, show:false,
-      routeWhileDragging:false, addWaypoints:false,
+      fitSelectedRoutes:true,show:false,
+      routeWhileDragging:false,addWaypoints:false,
       createMarker:()=>null,
       lineOptions:{styles:[{color:'#0055A4',weight:5}]}
     })
     .on('routesfound', e=>{
-      const r = e.routes[0];
-      // descartar fuera de campus
-      if (r.coordinates.some(c=>
+      const r=e.routes[0];
+      if(r.coordinates.some(c=>
         !turf.booleanPointInPolygon(turf.point([c.lng,c.lat]),campusPoly)
       )) return showBanner('Route exits campus bounds');
       instructions = r.instructions;
-      document.getElementById('stepsHeader').textContent =
-        `Steps (1/${instructions.length})`;
-      document.getElementById('stepsList').innerHTML =
-        instructions.map((i,idx)=>
-          `<li id="step-${idx}">${i.text}</li>`
-        ).join('');
+      $('stepsHeader').textContent = `Steps (1/${instructions.length})`;
+      $('stepsList').innerHTML = instructions.map((i,idx)=>
+        `<li id="step-${idx}">${i.text}</li>`
+      ).join('');
     })
     .on('routingerror', ()=>showBanner('Routing error'))
     .addTo(map2D);
-  }
+  });
 
-  // — Función para resaltar el paso más cercano —
+  // — Highlight nearest step — 
   function highlightStep(){
-    if (!marker2D) return;
-    const pos = marker2D.getLatLng();
-    const pt  = turf.point([pos.lng,pos.lat]);
+    if(!marker2D) return;
+    const pos=marker2D.getLatLng();
+    const pt=turf.point([pos.lng,pos.lat]);
     let best=0, bd=Infinity;
     instructions.forEach((inst,idx)=>{
-      if (!inst.latLng) return;
-      const d = turf.distance(pt,
-        turf.point([inst.latLng.lng,inst.latLng.lat]),
-        {units:'meters'}
-      );
-      if (d<bd){ bd=d; best=idx; }
+      if(!inst.latLng) return;
+      const d = turf.distance(pt, turf.point([inst.latLng.lng,inst.latLng.lat]), {units:'meters'});
+      if(d<bd){ bd=d; best=idx; }
     });
-    document.querySelectorAll('#stepsList li')
-      .forEach(li=>li.classList.remove('current'));
-    document.getElementById(`step-${best}`).classList.add('current');
-    document.getElementById('stepsHeader').textContent =
-      `Steps (${best+1}/${instructions.length})`;
+    document.querySelectorAll('#stepsList li').forEach(li=>li.classList.remove('current'));
+    const el=$('step-'+best);
+    if(el) el.classList.add('current');
+    $('stepsHeader').textContent = `Steps (${best+1}/${instructions.length})`;
   }
   </script>
+
 </body>
 </html>
