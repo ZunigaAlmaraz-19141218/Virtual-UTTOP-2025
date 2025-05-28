@@ -2,54 +2,28 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Foto + GPS als ZIP</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <title>Kamera-Foto aufnehmen</title>
 </head>
 <body>
-  <h2>Foto mit Standort aufnehmen und als ZIP speichern</h2>
-  <video id="video" width="320" autoplay></video><br>
-  <button onclick="capture()">Aufnehmen & Speichern</button><br><br>
-  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-  <img id="preview" width="320"><br>
+  <h2>Foto mit Kamera aufnehmen</h2>
+  <input type="file" accept="image/*" capture="environment" id="cameraInput">
+  <br><br>
+  <img id="preview" width="300" alt="Foto erscheint hier">
 
   <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
+    const input = document.getElementById('cameraInput');
     const preview = document.getElementById('preview');
 
-    // Kamera aktivieren
-    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-      video.srcObject = stream;
+    input.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          preview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
     });
-
-    function capture() {
-      // Bild aufnehmen
-      const context = canvas.getContext('2d');
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL('image/png');
-      preview.src = imageData;
-
-      // Standort abrufen
-      navigator.geolocation.getCurrentPosition(position => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-
-        const zip = new JSZip();
-        zip.file("location.txt", `Latitude: ${lat}\nLongitude: ${lon}`);
-
-        // Bild als Datei hinzufügen
-        zip.file("photo.png", imageData.split(',')[1], { base64: true });
-
-        // ZIP generieren
-        zip.generateAsync({ type: "blob" }).then(content => {
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(content);
-          a.download = "foto_mit_standort.zip";
-          a.click();
-        });
-
-      }, () => alert("Standort konnte nicht ermittelt werden"));
-    }
   </script>
 </body>
 </html>
