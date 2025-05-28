@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Foto mit Standort</title>
+</head>
+<body>
+  <h1>Foto aufnehmen mit Standort</h1>
+  <video id="video" width="300" autoplay></video><br>
+  <button onclick="takePhoto()">Foto aufnehmen</button>
+  <canvas id="canvas" width="300" height="225" style="display:none;"></canvas>
+  <p id="location">Standort wird geladen...</p>
+  <img id="photo" alt="Foto erscheint hier"><br>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const photo = document.getElementById('photo');
+    const locationText = document.getElementById('location');
+
+    // Kamera starten
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(error => {
+        alert('Kamera-Zugriff verweigert oder nicht verfügbar');
+      });
+
+    // Standort erfragen
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const lat = position.coords.latitude.toFixed(6);
+        const lon = position.coords.longitude.toFixed(6);
+        locationText.textContent = `Standort: ${lat}, ${lon}`;
+      },
+      error => {
+        locationText.textContent = 'Standort konnte nicht ermittelt werden';
+      }
+    );
+
+    // Foto aufnehmen
+    function takePhoto() {
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/png');
+      photo.src = imageData;
+    }
+  </script>
+</body>
+</html>
