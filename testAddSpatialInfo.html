@@ -2,49 +2,53 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Foto mit Standort</title>
+  <title>Foto + GPS als ZIP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
 </head>
 <body>
-  <h1>Foto aufnehmen mit Standort</h1>
-  <video id="video" width="300" autoplay></video><br>
-  <button onclick="takePhoto()">Foto aufnehmen</button>
-  <canvas id="canvas" width="300" height="225" style="display:none;"></canvas>
-  <p id="location">Standort wird geladen...</p>
-  <img id="photo" alt="Foto erscheint hier"><br>
+  <h2>Foto mit Standort aufnehmen und als ZIP speichern</h2>
+  <video id="video" width="320" autoplay></video><br>
+  <button onclick="capture()">Aufnehmen & Speichern</button><br><br>
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+  <img id="preview" width="320"><br>
 
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const photo = document.getElementById('photo');
-    const locationText = document.getElementById('location');
+    const preview = document.getElementById('preview');
 
-    // Kamera starten
-    navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(error => {
-        alert('Kamera-Zugriff verweigert oder nicht verfügbar');
-      });
+    // Kamera aktivieren
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      video.srcObject = stream;
+    });
 
-    // Standort erfragen
-    navigator.geolocation.getCurrentPosition(
-      position => {
-        const lat = position.coords.latitude.toFixed(6);
-        const lon = position.coords.longitude.toFixed(6);
-        locationText.textContent = `Standort: ${lat}, ${lon}`;
-      },
-      error => {
-        locationText.textContent = 'Standort konnte nicht ermittelt werden';
-      }
-    );
-
-    // Foto aufnehmen
-    function takePhoto() {
+    function capture() {
+      // Bild aufnehmen
       const context = canvas.getContext('2d');
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL('image/png');
-      photo.src = imageData;
+      preview.src = imageData;
+
+      // Standort abrufen
+      navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        const zip = new JSZip();
+        zip.file("location.txt", `Latitude: ${lat}\nLongitude: ${lon}`);
+
+        // Bild als Datei hinzufügen
+        zip.file("photo.png", imageData.split(',')[1], { base64: true });
+
+        // ZIP generieren
+        zip.generateAsync({ type: "blob" }).then(content => {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(content);
+          a.download = "foto_mit_standort.zip";
+          a.click();
+        });
+
+      }, () => alert("Standort konnte nicht ermittelt werden"));
     }
   </script>
 </body>
