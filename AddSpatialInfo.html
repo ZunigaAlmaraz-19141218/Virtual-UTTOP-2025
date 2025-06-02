@@ -568,12 +568,23 @@ request.onsuccess = event => {
   db = event.target.result;
   console.log("IndexedDB opened successfully");
 
-  // InfoManager initialisieren
-  const infoManager = new InfoManager(map2D);
-
   // Jetzt Marker nachladen:
-  infoManager.loadAllMarkers();
+  loadAllMarkers();
 };
+
+function loadAllMarkers() {
+  const tx = db.transaction("infos", "readonly");
+  const store = tx.objectStore("infos");
+
+  store.openCursor().onsuccess = event => {
+    const cursor = event.target.result;
+    if (cursor) {
+      const info = cursor.value;
+      addMarkerToMap(info); // Hier Marker auf Karte setzen!
+      cursor.continue();
+    }
+  };
+}
 
 
 
