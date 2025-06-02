@@ -498,9 +498,12 @@ btnViewInfos.addEventListener('click', () => {
           <strong>Lat:</strong> ${info.lat.toFixed(6)}<br>
           <strong>Lon:</strong> ${info.lon.toFixed(6)}<br>
           <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
-          ${info.image ? `<img src="${info.image}" width="200">` : ''}
+          ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
+          <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
+          <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
         </div>
       `).join('');
+
     }
   };
 });
@@ -510,6 +513,32 @@ const btnCloseInfoPanel = document.getElementById('btnCloseInfoPanel');
 btnCloseInfoPanel.addEventListener('click', () => {
   infoListPanel.style.display = 'none';
 });
+
+function uploadInfo(id) {
+  console.log("Upload requested for info ID:", id);
+  showBanner("Upload not implemented yet.");
+}
+
+function deleteInfo(id) {
+  const tx = db.transaction("infos", "readwrite");
+  const store = tx.objectStore("infos");
+
+  const deleteRequest = store.delete(id);
+
+  deleteRequest.onsuccess = () => {
+    console.log("Info ID", id, "deleted.");
+    showBanner("Information deleted.");
+
+    // View neu aktualisieren
+    btnViewInfos.click(); // Einfach neu laden
+  };
+
+  deleteRequest.onerror = event => {
+    console.error("Error deleting info:", event.target.error);
+    showBanner("Error deleting information.");
+  };
+}
+
 
 
 
