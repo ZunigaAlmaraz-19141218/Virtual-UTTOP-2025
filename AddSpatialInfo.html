@@ -66,11 +66,25 @@
     <label>Go To:</label>
     <select id="destination"></select>
     <button id="btnGo">Go</button>
-    <button id="btnAddPicture">Add Picture</button>
-    <input type="file" id="hiddenFileInput" accept="image/*" capture="environment" style="display:none;">
-    <br><br>
-    <img id="preview" width="300" alt="Foto erscheint hier">
   </div>
+
+  <!-- Add Information Button -->
+<button id="btnAddInfo">Add Information</button>
+
+<!-- Hidden Information Form -->
+<div id="infoForm" style="display:none; padding:10px; background:#fff; border:1px solid #aaa; margin-top:10px;">
+  <label for="infoComment">Comment:</label><br>
+  <input type="text" id="infoComment" placeholder="Describe the issue..." style="width:100%;"><br><br>
+
+  <label for="hiddenFileInput">Optional Picture:</label><br>
+  <input type="file" id="hiddenFileInput" accept="image/*" capture="environment"><br><br>
+
+  <button id="btnSaveInfo">Save Information</button>
+  <button id="btnCancelInfo">Cancel</button>
+  <br><br>
+  <img id="preview" width="300" alt="Preview here">
+</div>
+
 
   <div id="errorBanner" role="alert"></div>
   <div id="map2D" role="region" aria-label="Campus Map"></div>
@@ -121,7 +135,9 @@
     Département_Gestion_des_Entreprises_et_des_Administrations:[43.226727,0.049311],
     Département_Métiers_du_Multimédia_et_de_lInternet:[43.227101,0.049143],
     Département_Génie_Civil_Construction_Durable:[43.226198,0.047592],
-    Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],
+    Résidence_Universitaire_Simone_Veil:[43.227420,0.050176],Résidence_Universitaire_A:[43.227188, 0.051380], 
+    Résidence_Universitaire_B:[43.226901, 0.051519],Résidence_Universitaire_C:[43.226672, 0.051519],Résidence_Universitaire_D:[43.227049, 0.050050],
+    Résidence_Universitaire_E:[43.227233, 0.050063],Résidence_Universitaire_F:[43.227397, 0.050192],
     laboratory_l0:[43.225374,0.050196], laboratory_l1:[43.225663,0.050199],
     laboratory_l2:[43.225945,0.050215], laboratory_l3:[43.226115,0.050229],
     laboratory_l4:[43.226295,0.050246]
@@ -134,7 +150,8 @@
     const groups = {
       "General Facilities":["entrance","library","cafeteria","gym"],
       "Academic Buildings":["building_a","building_b","building_c","building_d","building_e","building_i","building_j","building_k","building_m","building_iufm","Observatory_Midi_Pyrenees"],
-      "Departments & Residence":["Département_Génie_Électrique_et_InformatiqueIndustrielle","Département_Techniques_de_Commercialisation","Département_Génie_Mécanique_et_Productique","Département_Gestion_des_Entreprises_et_des_Administrations","Département_Métiers_du_Multimédia_et_de_lInternet","Département_Génie_Civil_Construction_Durable","Résidence_Universitaire_Simone_Veil"],
+      "Departments":["Département_Génie_Électrique_et_InformatiqueIndustrielle","Département_Techniques_de_Commercialisation","Département_Génie_Mécanique_et_Productique","Département_Gestion_des_Entreprises_et_des_Administrations","Département_Métiers_du_Multimédia_et_de_lInternet","Département_Génie_Civil_Construction_Durable","Résidence_Universitaire_Simone_Veil"],
+      "Student Residences":["Résidence_Universitaire_A","Résidence_Universitaire_B","Résidence_Universitaire_C","Résidence_Universitaire_D","Résidence_Universitaire_E","Résidence_Universitaire_F"],
       "Laboratories":["laboratory_l0","laboratory_l1","laboratory_l2","laboratory_l3","laboratory_l4"]
     };
     for (let label in groups){
@@ -163,26 +180,7 @@
   // Globals
   let marker2D, watchId, routingControl, instructions=[];
   let smoothLat, smoothLon, first=true, frameCnt=0;
-    const button = document.getElementById('btnAddPicture');
-    const fileInput = document.getElementById('hiddenFileInput');
-    const preview = document.getElementById('preview');
 
-    // Klick auf Button triggert verstecktes Dateifeld
-    button.addEventListener('click', () => {
-      fileInput.click();
-    });
-
-    // Nach Bildauswahl anzeigen
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          preview.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
   // Start GPS button
   $('btnStartGPS').addEventListener('click',()=>{
     if(!navigator.geolocation) return showBanner('Geolocation not supported');
@@ -295,6 +293,166 @@
     if(el) el.classList.add('current');
     $('stepsHeader').textContent = `Steps (${best+1}/${instructions.length})`;
   }
+
+  // ==========================
+// IndexedDB initialisieren
+// ==========================
+let db;
+const request = indexedDB.open("CampusAppDB", 1);
+
+request.onerror = event => {
+  console.error("Database error:", event.target.error);
+};
+
+request.onsuccess = event => {
+  db = event.target.result;
+  console.log("IndexedDB opened successfully");
+};
+
+request.onupgradeneeded = event => {
+  db = event.target.result;
+  db.createObjectStore("infos", { keyPath: "id", autoIncrement: true });
+};
+
+// ==========================
+// UI Logik
+// ==========================
+const btnAddInfo = document.getElementById('btnAddInfo');
+const infoForm = document.getElementById('infoForm');
+const btnSaveInfo = document.getElementById('btnSaveInfo');
+const btnCancelInfo = document.getElementById('btnCancelInfo');
+const fileInput = document.getElementById('hiddenFileInput');
+const preview = document.getElementById('preview');
+const infoComment = document.getElementById('infoComment');
+
+btnAddInfo.addEventListener('click', () => {
+  infoForm.style.display = 'block';
+});
+
+btnCancelInfo.addEventListener('click', () => {
+  infoForm.style.display = 'none';
+  infoComment.value = '';
+  fileInput.value = '';
+  preview.src = '';
+});
+
+// Bildvorschau anzeigen
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.src = '';
+  }
+});
+
+// ==========================
+// Speichern + Marker setzen
+// ==========================
+btnSaveInfo.addEventListener('click', () => {
+  if (!marker2D) {
+    showBanner('Please start GPS first');
+    return;
+  }
+
+  const position = marker2D.getLatLng();
+  const comment = infoComment.value;
+  const file = fileInput.files[0] || null;
+
+  // Bild als Blob einlesen (oder null)
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const imageData = e.target.result;
+      saveInfo(position, comment, imageData);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    saveInfo(position, comment, null);
+  }
+
+  // UI zurücksetzen
+  infoForm.style.display = 'none';
+  infoComment.value = '';
+  fileInput.value = '';
+  preview.src = '';
+});
+
+// ==========================
+// Speichern in IndexedDB
+// ==========================
+function saveInfo(position, comment, imageData) {
+  const tx = db.transaction("infos", "readwrite");
+  const store = tx.objectStore("infos");
+
+  const infoObject = {
+    lat: position.lat,
+    lon: position.lng,
+    comment: comment,
+    image: imageData, // base64 oder null
+    timestamp: Date.now()
+  };
+
+  const addRequest = store.add(infoObject);
+
+  addRequest.onsuccess = () => {
+    console.log("Information saved", infoObject);
+    addMarkerToMap(infoObject);
+  };
+
+  addRequest.onerror = event => {
+    console.error("Error saving information:", event.target.error);
+  };
+}
+
+// ==========================
+// Marker auf Karte hinzufügen
+// ==========================
+function addMarkerToMap(infoObject) {
+  const marker = L.marker([infoObject.lat, infoObject.lon], {
+    draggable: true,
+    icon: L.divIcon({
+      className: 'custom-info-marker',
+      html: '<div style="width:18px;height:18px;background:red;border-radius:50%;border:2px solid #fff;"></div>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  }).addTo(map2D);
+
+  // Popup mit Info anzeigen
+  marker.bindPopup(`
+    <strong>Comment:</strong> ${infoObject.comment || '(none)'}<br>
+    ${infoObject.image ? `<img src="${infoObject.image}" width="200">` : ''}
+  `);
+
+  // Drag-End Event: neue Position speichern
+  marker.on('dragend', () => {
+    const newPos = marker.getLatLng();
+    console.log("Marker moved to:", newPos);
+
+    // Update in IndexedDB
+    const tx = db.transaction("infos", "readwrite");
+    const store = tx.objectStore("infos");
+    const getRequest = store.get(infoObject.id);
+
+    getRequest.onsuccess = () => {
+      const data = getRequest.result;
+      data.lat = newPos.lat;
+      data.lon = newPos.lng;
+
+      const updateRequest = store.put(data);
+
+      updateRequest.onsuccess = () => {
+        console.log("Marker position updated in DB");
+      };
+    };
+  });
+}
+
   </script>
 
 </body>
