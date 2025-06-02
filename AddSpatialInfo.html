@@ -80,7 +80,12 @@
 
   <label for="hiddenFileInput">Optional Picture:</label><br>
   <input type="file" id="hiddenFileInput" accept="image/*" capture="environment"><br><br>
-
+  <label>Marker Type:</label><br>
+  <select id="infoMarkerType">
+    <option value="tree">Tree</option>
+    <option value="cross">Cross</option>
+  </select>
+  <br><br>
   <button id="btnSaveInfo">Save Information</button>
   <button id="btnCancelInfo">Cancel</button>
   <br><br>
@@ -372,6 +377,7 @@ btnSaveInfo.addEventListener('click', () => {
 
   const position = marker2D.getLatLng();
   const comment = infoComment.value;
+   const markerType = document.getElementById('infoMarkerType').value;
   const file = fileInput.files[0] || null;
 
   // Bild als Blob einlesen (oder null)
@@ -379,14 +385,14 @@ btnSaveInfo.addEventListener('click', () => {
     const reader = new FileReader();
     reader.onload = e => {
       const imageData = e.target.result;
-      saveInfo(position, comment, imageData);
+      saveInfo(position, comment, imageData, markerType);
     };
     reader.readAsDataURL(file);
   } else {
-    saveInfo(position, comment, null);
+    saveInfo(position, comment, null, markerType);
   }
 
-  // UI zurücksetzen
+  // reset Form
   infoForm.style.display = 'none';
   infoComment.value = '';
   fileInput.value = '';
@@ -396,7 +402,7 @@ btnSaveInfo.addEventListener('click', () => {
 // ==========================
 // Speichern in IndexedDB
 // ==========================
-function saveInfo(position, comment, imageData) {
+function saveInfo(position, comment, imageData, markerType) {
   const tx = db.transaction("infos", "readwrite");
   const store = tx.objectStore("infos");
 
@@ -405,6 +411,7 @@ function saveInfo(position, comment, imageData) {
     lon: position.lng,
     comment: comment,
     image: imageData, // base64 oder null
+    markerType: markerType, // z.B. "tree" oder "cross"
     timestamp: Date.now()
   };
 
@@ -426,28 +433,42 @@ function saveInfo(position, comment, imageData) {
 // Marker auf Karte hinzufügen
 // ==========================
 function addMarkerToMap(infoObject) {
+  let markerHtml = '';
+
+  if (infoObject.markerType === 'tree') {
+    markerHtml = '<div style="width:18px;height:18px;background:green;border-radius:50%;border:2px solid #fff;"></div>';
+  } else if (infoObject.markerType === 'cross') {
+    markerHtml = `
+      <div style="width:18px;height:18px;background:red;position:relative;">
+        <div style="position:absolute;top:4px;left:8px;width:2px;height:10px;background:#fff;"></div>
+        <div style="position:absolute;top:8px;left:4px;width:10px;height:2px;background:#fff;"></div>
+      </div>
+    `;
+  } else {
+    // Fallback
+    markerHtml = '<div style="width:18px;height:18px;background:blue;border-radius:50%;border:2px solid #fff;"></div>';
+  }
+
   const marker = L.marker([infoObject.lat, infoObject.lon], {
     draggable: true,
     icon: L.divIcon({
       className: 'custom-info-marker',
-      html: '<div style="width:18px;height:18px;background:red;border-radius:50%;border:2px solid #fff;"></div>',
+      html: markerHtml,
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     })
   }).addTo(map2D);
 
-  // Popup mit Info anzeigen
   marker.bindPopup(`
     <strong>Comment:</strong> ${infoObject.comment || '(none)'}<br>
+    <strong>Type:</strong> ${infoObject.markerType}<br>
     ${infoObject.image ? `<img src="${infoObject.image}" width="200">` : ''}
   `);
 
-  // Drag-End Event: neue Position speichern
   marker.on('dragend', () => {
     const newPos = marker.getLatLng();
     console.log("Marker moved to:", newPos);
 
-    // Update in IndexedDB
     const tx = db.transaction("infos", "readwrite");
     const store = tx.objectStore("infos");
     const getRequest = store.get(infoObject.id);
@@ -465,6 +486,10 @@ function addMarkerToMap(infoObject) {
     };
   });
 }
+
+
+
+
 const btnViewInfos = document.getElementById('btnViewInfos');
 const infoListPanel = document.getElementById('infoListPanel');
 const infoList = document.getElementById('infoList');
