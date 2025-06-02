@@ -410,9 +410,11 @@ function saveInfo(position, comment, imageData) {
 
   const addRequest = store.add(infoObject);
 
-  addRequest.onsuccess = () => {
+  addRequest.onsuccess = (event) => {
+    const newId = event.target.result;
+    infoObject.id = newId;
     console.log("Information saved", infoObject);
-    addMarkerToMap(infoObject);
+    this.addMarkerToMap(infoObject);
   };
 
   addRequest.onerror = event => {
