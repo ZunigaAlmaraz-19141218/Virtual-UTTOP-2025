@@ -421,7 +421,7 @@ function saveInfo(position, comment, imageData, markerType) {
     const newId = event.target.result;
     infoObject.id = newId;
     console.log("Information saved", infoObject);
-    this.addMarkerToMap(infoObject);
+    addMarkerToMap(infoObject);
   };
 
   addRequest.onerror = event => {
