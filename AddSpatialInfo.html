@@ -492,17 +492,17 @@ btnViewInfos.addEventListener('click', () => {
         return;
       }
 
-      infoList.innerHTML = infos.map(info => `
-        <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-          <strong>Comment:</strong> ${info.comment || '(none)'}<br>
-          <strong>Lat:</strong> ${info.lat.toFixed(6)}<br>
-          <strong>Lon:</strong> ${info.lon.toFixed(6)}<br>
-          <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
-          ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
-          <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
-          <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
-        </div>
-      `).join('');
+    infoList.innerHTML = infos.map(info => `
+      <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
+        <strong>Comment:</strong> ${info.comment || '(none)'}<br>
+        <strong>Lat:</strong> ${info.lat.toFixed(6)}<br>
+        <strong>Lon:</strong> ${info.lon.toFixed(6)}<br>
+        <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
+        ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
+        <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
+        <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
+      </div>
+    `).join('');
 
     }
   };
@@ -539,6 +539,16 @@ function deleteInfo(id) {
   };
 }
 
+request.onsuccess = event => {
+  db = event.target.result;
+  console.log("IndexedDB opened successfully");
+
+  // InfoManager initialisieren
+  const infoManager = new InfoManager(map2D);
+
+  // Jetzt Marker nachladen:
+  infoManager.loadAllMarkers();
+};
 
 
 
