@@ -432,6 +432,8 @@ function saveInfo(position, comment, imageData, markerType) {
 // ==========================
 // Marker auf Karte hinzufügen
 // ==========================
+let infoMarkers = []; // Speichert Marker mit Info-ID
+
 function addMarkerToMap(infoObject) {
   let markerHtml = '';
 
@@ -458,6 +460,8 @@ function addMarkerToMap(infoObject) {
       iconAnchor: [12, 12]
     })
   }).addTo(map2D);
+
+  infoMarkers.push({ id: infoObject.id, marker: marker });
 
   marker.bindPopup(`
     <strong>Comment:</strong> ${infoObject.comment || '(none)'}<br>
@@ -554,8 +558,16 @@ function deleteInfo(id) {
     console.log("Info ID", id, "deleted.");
     showBanner("Information deleted.");
 
+    // Marker auf Karte entfernen
+    const markerEntry = infoMarkers.find(entry => entry.id === id);
+    if (markerEntry) {
+      map2D.removeLayer(markerEntry.marker);
+      infoMarkers = infoMarkers.filter(entry => entry.id !== id); // aus Array entfernen
+      console.log("Marker for Info ID", id, "removed from map.");
+    }
+
     // View neu aktualisieren
-    btnViewInfos.click(); // Einfach neu laden
+    btnViewInfos.click();
   };
 
   deleteRequest.onerror = event => {
@@ -563,6 +575,7 @@ function deleteInfo(id) {
     showBanner("Error deleting information.");
   };
 }
+
 
 request.onsuccess = event => {
   db = event.target.result;
