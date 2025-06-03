@@ -544,7 +544,7 @@ function refreshInfoList() {
         let markerName = '';
 
         if (info.markerType === 'tree') {
-          markerName = 'Tree (Tree)';
+          markerName = 'Tree (Baum)';
           iconHtml = '<div style="width:18px;height:18px;background:green;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
         } else if (info.markerType === 'cross') {
           markerName = 'Cross (Problem)';
@@ -568,7 +568,7 @@ function refreshInfoList() {
             <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
             ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
             <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
-            <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
+            <button onclick="deleteInfo(event, ${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
           </div>
         `;
       }).join('');
@@ -589,7 +589,9 @@ function uploadInfo(id) {
   showBanner("Upload not implemented yet.");
 }
 
-function deleteInfo(id) {
+function deleteInfo(event, id) {
+  event.stopPropagation(); // <<< WICHTIG → verhindert Toggle!
+  
   const tx = db.transaction("infos", "readwrite");
   const store = tx.objectStore("infos");
 
@@ -603,14 +605,14 @@ function deleteInfo(id) {
     const markerEntry = infoMarkers.find(entry => entry.id === id);
     if (markerEntry) {
       map2D.removeLayer(markerEntry.marker);
-      infoMarkers = infoMarkers.filter(entry => entry.id !== id); // aus Array entfernen
+      infoMarkers = infoMarkers.filter(entry => entry.id !== id);
       console.log("Marker for Info ID", id, "removed from map.");
     }
 
+    // View neu aktualisieren
     if (infoListPanel.style.display !== 'none') {
       refreshInfoList();
     }
-
   };
 
   deleteRequest.onerror = event => {
@@ -618,6 +620,7 @@ function deleteInfo(id) {
     showBanner("Error deleting information.");
   };
 }
+
 
 
 request.onsuccess = event => {
