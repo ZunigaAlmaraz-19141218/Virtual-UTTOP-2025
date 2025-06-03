@@ -342,8 +342,13 @@ const preview = document.getElementById('preview');
 const infoComment = document.getElementById('infoComment');
 
 btnAddInfo.addEventListener('click', () => {
-  infoForm.style.display = 'block';
+  if (infoForm.style.display === 'none' || infoForm.style.display === '') {
+    infoForm.style.display = 'block';
+  } else {
+    infoForm.style.display = 'none';
+  }
 });
+
 
 btnCancelInfo.addEventListener('click', () => {
   infoForm.style.display = 'none';
@@ -504,43 +509,70 @@ const infoListPanel = document.getElementById('infoListPanel');
 const infoList = document.getElementById('infoList');
 
 btnViewInfos.addEventListener('click', () => {
-  // Panel anzeigen
-  infoListPanel.style.display = 'block';
-  infoList.innerHTML = '<em>Loading...</em>';
+  if (infoListPanel.style.display === 'none' || infoListPanel.style.display === '') {
+    // Panel anzeigen
+    infoListPanel.style.display = 'block';
+    infoList.innerHTML = '<em>Loading...</em>';
 
-  // Alle Daten aus DB lesen
-  const tx = db.transaction("infos", "readonly");
-  const store = tx.objectStore("infos");
+    // Alle Daten aus DB lesen
+    const tx = db.transaction("infos", "readonly");
+    const store = tx.objectStore("infos");
 
-  const infos = [];
+    const infos = [];
 
-  store.openCursor().onsuccess = event => {
-    const cursor = event.target.result;
-    if (cursor) {
-      infos.push(cursor.value);
-      cursor.continue();
-    } else {
-      // Fertig geladen → anzeigen
-      if (infos.length === 0) {
-        infoList.innerHTML = '<p>No information saved yet.</p>';
-        return;
+    store.openCursor().onsuccess = event => {
+      const cursor = event.target.result;
+      if (cursor) {
+        infos.push(cursor.value);
+        cursor.continue();
+      } else {
+        if (infos.length === 0) {
+          infoList.innerHTML = '<p>No information saved yet.</p>';
+          return;
+        }
+
+        // ... deine infos.map(...) hier wie gehabt ...
+        infoList.innerHTML = infos.map(info => {
+          let iconHtml = '';
+          let markerName = '';
+
+          if (info.markerType === 'tree') {
+            markerName = 'Tree (Baum)';
+            iconHtml = '<div style="width:18px;height:18px;background:green;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
+          } else if (info.markerType === 'cross') {
+            markerName = 'Cross (Problemstelle)';
+            iconHtml = `
+              <div style="width:18px;height:18px;background:red;position:relative; display:inline-block;">
+                <div style="position:absolute;top:4px;left:8px;width:2px;height:10px;background:#fff;"></div>
+                <div style="position:absolute;top:8px;left:4px;width:10px;height:2px;background:#fff;"></div>
+              </div>
+            `;
+          } else {
+            markerName = 'Unknown';
+            iconHtml = '<div style="width:18px;height:18px;background:blue;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
+          }
+
+          return `
+            <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
+              <strong>Comment:</strong> ${info.comment || '(none)'}<br>
+              <strong>Type:</strong> ${markerName} ${iconHtml}<br>
+              <strong>Lat:</strong> ${info.lat.toFixed(6)}<br>
+              <strong>Lon:</strong> ${info.lon.toFixed(6)}<br>
+              <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
+              ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
+              <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
+              <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
+            </div>
+          `;
+        }).join('');
       }
-
-    infoList.innerHTML = infos.map(info => `
-      <div style="border:1px solid #ccc; padding:8px; margin-bottom:8px;">
-        <strong>Comment:</strong> ${info.comment || '(none)'}<br>
-        <strong>Lat:</strong> ${info.lat.toFixed(6)}<br>
-        <strong>Lon:</strong> ${info.lon.toFixed(6)}<br>
-        <strong>Time:</strong> ${new Date(info.timestamp).toLocaleString()}<br>
-        ${info.image ? `<img src="${info.image}" width="200"><br>` : ''}
-        <button onclick="uploadInfo(${info.id})" style="margin-top:6px;">Upload to Server</button>
-        <button onclick="deleteInfo(${info.id})" style="margin-top:6px; margin-left:6px;">Delete</button>
-      </div>
-    `).join('');
-
-    }
-  };
+    };
+  } else {
+    // Panel ausblenden
+    infoListPanel.style.display = 'none';
+  }
 });
+
 
 const btnCloseInfoPanel = document.getElementById('btnCloseInfoPanel');
 
