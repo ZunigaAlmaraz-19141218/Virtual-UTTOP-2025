@@ -58,6 +58,9 @@
 <body>
 
   <div id="controls">
+    <div style="font-size: 1.5em; font-weight: bold; color: #FFD700; margin-bottom: 10px;">
+    Version: <span id="versionCounter">Loading...</span>
+    </div>
     <button id="btnStartGPS">Start GPS</button>
     <label>Filter:</label>
     <input id="searchBox" placeholder="Type to filter…" />
@@ -644,8 +647,14 @@ function loadAllMarkers() {
     }
   };
 }
-
-
+fetch('version.txt')
+  .then(response => response.text())
+  .then(version => {
+    document.getElementById('versionCounter').textContent = version.trim();
+  })
+  .catch(error => {
+    console.error('Could not load version:', error);
+  });
 
   </script>
 
