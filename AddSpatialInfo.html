@@ -378,14 +378,19 @@ fileInput.addEventListener('change', () => {
 // Speichern + Marker setzen
 // ==========================
 btnSaveInfo.addEventListener('click', () => {
-  if (!marker2D) {
-    showBanner('Please start GPS first.');
-    return;
+  let position;
+
+  if (marker2D) {
+    // GPS aktiv → aktuelle Position nehmen
+    position = marker2D.getLatLng();
+  } else {
+    // Kein GPS → Default-Position Gebäude C nehmen
+    position = L.latLng(43.224918, 0.050762);
+    showBanner('No GPS active. Using default position: Building C');
   }
 
-  const position = marker2D.getLatLng();
   const comment = infoComment.value;
-   const markerType = document.getElementById('infoMarkerType').value;
+  const markerType = document.getElementById('infoMarkerType').value;
   const file = fileInput.files[0] || null;
 
   // Bild als Blob einlesen (oder null)
@@ -400,12 +405,13 @@ btnSaveInfo.addEventListener('click', () => {
     saveInfo(position, comment, null, markerType);
   }
 
-  // reset Form
+  // Reset Form
   infoForm.style.display = 'none';
   infoComment.value = '';
   fileInput.value = '';
   preview.src = '';
 });
+
 
 // ==========================
 // Speichern in IndexedDB
