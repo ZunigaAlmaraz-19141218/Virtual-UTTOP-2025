@@ -379,7 +379,7 @@ fileInput.addEventListener('change', () => {
 // ==========================
 btnSaveInfo.addEventListener('click', () => {
   if (!marker2D) {
-    showBanner('Please start GPS first');
+    showBanner('Please start GPS first.');
     return;
   }
 
@@ -496,7 +496,7 @@ function addMarkerToMap(infoObject) {
         console.log("Marker position updated in DB");
         // View aktualisieren, wenn offen
         if (infoListPanel.style.display !== 'none') {
-          btnViewInfos.click(); // Neu laden
+           refreshInfoList(); // Neu laden
           console.log("Info list refreshed after marker move.");
         }
       };
