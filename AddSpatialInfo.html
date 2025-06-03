@@ -486,6 +486,11 @@ function addMarkerToMap(infoObject) {
 
       updateRequest.onsuccess = () => {
         console.log("Marker position updated in DB");
+        // View aktualisieren, wenn offen
+        if (infoListPanel.style.display !== 'none') {
+          btnViewInfos.click(); // Neu laden
+          console.log("Info list refreshed after marker move.");
+        }
       };
     };
   });
