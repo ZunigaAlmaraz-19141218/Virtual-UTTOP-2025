@@ -295,32 +295,62 @@ function checkAndSaveUrlMarker() {
     map2D.setView(position, map2D.getZoom());
     console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
 
-    // Save as info
-    const tx = db.transaction("infos", "readwrite");
+    // BEFORE saving: check if an existing Location Link already exists
+    const tx = db.transaction("infos", "readonly");
     const store = tx.objectStore("infos");
 
-    const infoObject = {
-      lat: position.lat,
-      lon: position.lng,
-      comment: "Location Link",
-      image: null,
-      markerType: "orange",
-      timestamp: Date.now()
-    };
+    const infos = [];
+    store.openCursor().onsuccess = event => {
+      const cursor = event.target.result;
+      if (cursor) {
+        infos.push(cursor.value);
+        cursor.continue();
+      } else {
+        // Now check if Location Link already exists (same lat/lon)
+        const existing = infos.find(info =>
+          info.comment === "Location Link" &&
+          Math.abs(info.lat - position.lat) < 0.00001 &&
+          Math.abs(info.lon - position.lon) < 0.00001
+        );
 
-    const addRequest = store.add(infoObject);
+        if (existing) {
+          console.log("Location Link already exists → will not add duplicate.");
+        } else {
+          // Now save new Location Link
+          const tx2 = db.transaction("infos", "readwrite");
+          const store2 = tx2.objectStore("infos");
 
-    addRequest.onsuccess = event => {
-      const newId = event.target.result;
-      infoObject.id = newId;
-      console.log("Location Link Info saved:", infoObject);
+          const infoObject = {
+            lat: position.lat,
+            lon: position.lng,
+            comment: "Location Link",
+            image: null,
+            markerType: "orange",
+            timestamp: Date.now()
+          };
 
-      // Add marker using existing function
-      addMarkerToMap(infoObject);
-    };
+          const addRequest = store2.add(infoObject);
 
-    addRequest.onerror = event => {
-      console.error("Error saving Location Link Info:", event.target.error);
+          addRequest.onsuccess = event => {
+            const newId = event.target.result;
+            infoObject.id = newId;
+            console.log("Location Link Info saved:", infoObject);
+
+            // Add marker
+            addMarkerToMap(infoObject);
+
+            // Also refresh Info List (so you see it!)
+            if (typeof refreshInfoList === "function" && infoListPanel.style.display !== 'none') {
+              refreshInfoList();
+              console.log("Info List refreshed after adding Location Link.");
+            }
+          };
+
+          addRequest.onerror = event => {
+            console.error("Error saving Location Link Info:", event.target.error);
+          };
+        }
+      }
     };
   }
 }
