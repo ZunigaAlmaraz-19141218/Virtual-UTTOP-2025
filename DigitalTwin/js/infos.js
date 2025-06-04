@@ -213,11 +213,15 @@ const infoList = $('infoList');
 btnViewInfos.addEventListener('click', () => {
   if (infoListPanel.style.display === 'none' || infoListPanel.style.display === '') {
     infoListPanel.style.display = 'block';
+
+    // ALWAYS refresh when opening panel!
     refreshInfoList();
+    console.log("Info List refreshed after opening panel.");
   } else {
     infoListPanel.style.display = 'none';
   }
 });
+
 
 // === Refresh Info List ===
 function refreshInfoList() {
