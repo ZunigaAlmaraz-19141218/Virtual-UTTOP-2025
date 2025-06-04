@@ -298,7 +298,7 @@ if (!isNaN(paramLat) && !isNaN(paramLon)) {
   const urlMarker = L.marker(position, {
     icon: L.divIcon({
       className: 'custom-url-marker',
-      html: '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff;"></div>',
+      html: '',
       iconSize: [24, 24],
       iconAnchor: [12, 12]
     })
