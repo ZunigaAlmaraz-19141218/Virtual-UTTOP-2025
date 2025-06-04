@@ -281,3 +281,15 @@ function highlightStep() {
 
   $('stepsHeader').textContent = `Steps (${bestIndex + 1}/${instructions.length})`;
 }
+
+// Read URL parameters
+const urlParams = new URLSearchParams(window.location.search);
+
+const paramLat = parseFloat(urlParams.get('lat'));
+const paramLon = parseFloat(urlParams.get('lon'));
+
+if (!isNaN(paramLat) && !isNaN(paramLon)) {
+  // If lat/lon given → center map there
+  map2D.setView([paramLat, paramLon], map2D.getZoom());
+  console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
+}
