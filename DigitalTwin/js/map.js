@@ -282,14 +282,28 @@ function highlightStep() {
   $('stepsHeader').textContent = `Steps (${bestIndex + 1}/${instructions.length})`;
 }
 
-// Read URL parameters
 const urlParams = new URLSearchParams(window.location.search);
 
 const paramLat = parseFloat(urlParams.get('lat'));
 const paramLon = parseFloat(urlParams.get('lon'));
 
 if (!isNaN(paramLat) && !isNaN(paramLon)) {
-  // If lat/lon given → center map there
-  map2D.setView([paramLat, paramLon], map2D.getZoom());
+  const position = [paramLat, paramLon];
+  
+  // Center map
+  map2D.setView(position, map2D.getZoom());
   console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
+
+  // Add marker
+  const urlMarker = L.marker(position, {
+    icon: L.divIcon({
+      className: 'custom-url-marker',
+      html: '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff;"></div>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  }).addTo(map2D);
+
+  urlMarker.bindPopup(`<strong>Marker from URL:</strong><br>Lat: ${paramLat.toFixed(6)}<br>Lon: ${paramLon.toFixed(6)}`).openPopup();
 }
+
