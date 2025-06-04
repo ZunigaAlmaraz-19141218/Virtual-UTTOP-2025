@@ -282,20 +282,20 @@ function highlightStep() {
   $('stepsHeader').textContent = `Steps (${bestIndex + 1}/${instructions.length})`;
 }
 
-const urlParams = new URLSearchParams(window.location.search);
+function checkAndSaveUrlMarker() {
+  const urlParams = new URLSearchParams(window.location.search);
 
-const paramLat = parseFloat(urlParams.get('lat'));
-const paramLon = parseFloat(urlParams.get('lon'));
+  const paramLat = parseFloat(urlParams.get('lat'));
+  const paramLon = parseFloat(urlParams.get('lon'));
 
-if (!isNaN(paramLat) && !isNaN(paramLon)) {
-  const position = L.latLng(paramLat, paramLon);
+  if (!isNaN(paramLat) && !isNaN(paramLon)) {
+    const position = L.latLng(paramLat, paramLon);
 
-  // Center map
-  map2D.setView(position, map2D.getZoom());
-  console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
+    // Center map
+    map2D.setView(position, map2D.getZoom());
+    console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
 
-  // Save as info → uses existing logic
-  if (db) {
+    // Save as info
     const tx = db.transaction("infos", "readwrite");
     const store = tx.objectStore("infos");
 
@@ -322,8 +322,6 @@ if (!isNaN(paramLat) && !isNaN(paramLon)) {
     addRequest.onerror = event => {
       console.error("Error saving Location Link Info:", event.target.error);
     };
-  } else {
-    console.warn("DB not ready yet → cannot save Location Link Info.");
   }
 }
 

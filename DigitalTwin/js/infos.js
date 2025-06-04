@@ -18,6 +18,7 @@ request.onsuccess = event => {
 
   // Load existing markers on map
   loadAllMarkers();
+  checkAndSaveUrlMarker();  
 };
 
 request.onupgradeneeded = event => {
