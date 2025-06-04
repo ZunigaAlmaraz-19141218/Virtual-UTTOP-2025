@@ -109,7 +109,7 @@ const map2D = L.map('map2D', {
   minZoom: 17,
   maxZoom: 19,
   maxBounds: campusBounds,
-  renderer: L.canvas()
+  //renderer: L.canvas()
 });
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
