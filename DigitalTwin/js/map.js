@@ -288,22 +288,43 @@ const paramLat = parseFloat(urlParams.get('lat'));
 const paramLon = parseFloat(urlParams.get('lon'));
 
 if (!isNaN(paramLat) && !isNaN(paramLon)) {
-  const position = [paramLat, paramLon];
-  
+  const position = L.latLng(paramLat, paramLon);
+
   // Center map
   map2D.setView(position, map2D.getZoom());
   console.log(`Map centered to URL position: ${paramLat}, ${paramLon}`);
 
-  // Add marker
-  const urlMarker = L.marker(position, {
-    icon: L.divIcon({
-      className: 'custom-url-marker',
-      html: '',
-      iconSize: [24, 24],
-      iconAnchor: [12, 12]
-    })
-  }).addTo(map2D);
+  // Save as info → uses existing logic
+  if (db) {
+    const tx = db.transaction("infos", "readwrite");
+    const store = tx.objectStore("infos");
 
-  urlMarker.bindPopup(`<strong>Marker from URL:</strong><br>Lat: ${paramLat.toFixed(6)}<br>Lon: ${paramLon.toFixed(6)}`).openPopup();
+    const infoObject = {
+      lat: position.lat,
+      lon: position.lng,
+      comment: "Location Link",
+      image: null,
+      markerType: "orange",
+      timestamp: Date.now()
+    };
+
+    const addRequest = store.add(infoObject);
+
+    addRequest.onsuccess = event => {
+      const newId = event.target.result;
+      infoObject.id = newId;
+      console.log("Location Link Info saved:", infoObject);
+
+      // Add marker using existing function
+      addMarkerToMap(infoObject);
+    };
+
+    addRequest.onerror = event => {
+      console.error("Error saving Location Link Info:", event.target.error);
+    };
+  } else {
+    console.warn("DB not ready yet → cannot save Location Link Info.");
+  }
 }
+
 
