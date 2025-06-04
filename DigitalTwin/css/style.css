@@ -149,3 +149,21 @@ body {
   border-radius: 4px;
   cursor: pointer;
 }
+/* === URL Marker (from URL params) === */
+.custom-url-marker {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+
+.custom-url-marker::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: orange;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
