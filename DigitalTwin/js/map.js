@@ -18,7 +18,7 @@ const campusPoly = turf.polygon([[
   [0.0536, 43.2280], [0.0459, 43.2280],
   [0.0459, 43.2235]
 ]]);
-
+//test 21
 // === Fixed locations on campus ===
 const locations = {
   entrance: [43.225018, 0.052059],
