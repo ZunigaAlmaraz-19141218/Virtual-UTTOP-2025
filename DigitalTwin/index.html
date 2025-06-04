@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ENIT Campus Navigation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Turf.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+</head>
+
+<body>
+
+  <!-- Controls oben -->
+  <div id="controls">
+    <div style="font-size: 1.5em; font-weight: bold; color: #FFD700; margin-bottom: 10px;">
+      Version: <span id="versionCounter">Loading...</span>
+    </div>
+    <button id="btnStartGPS">Start GPS</button>
+    <label>Filter:</label>
+    <input id="searchBox" placeholder="Type to filter…" />
+    <label>Start From:</label>
+    <select id="origin"></select>
+    <label>Go To:</label>
+    <select id="destination"></select>
+    <button id="btnGo">Go</button>
+    <button id="btnAddInfo">Add Information</button>
+    <button id="btnViewInfos">View Information</button>
+  </div>
+
+  <!-- Info Form (Add Information) -->
+  <div id="infoForm" style="display:none; padding:10px; background:#fff; border:1px solid #aaa; margin-top:10px;">
+    <label for="infoComment">Comment:</label><br>
+    <input type="text" id="infoComment" placeholder="Describe the issue..." style="width:100%;"><br><br>
+
+    <label for="hiddenFileInput">Optional Picture:</label><br>
+    <input type="file" id="hiddenFileInput" accept="image/*" capture="environment"><br><br>
+
+    <label>Marker Type:</label><br>
+    <select id="infoMarkerType">
+      <option value="tree">Tree</option>
+      <option value="cross">Cross</option>
+    </select>
+    <br><br>
+    <button id="btnSaveInfo">Save Information</button>
+    <button id="btnCancelInfo">Cancel</button>
+    <br><br>
+    <img id="preview" width="300" alt="Preview here">
+  </div>
+
+  <!-- Info List Panel -->
+  <div id="infoListPanel" style="display:none; padding:12px; background:#fff; border-top:2px solid #0055A4; max-height:30vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Saved Information</h3>
+      <button id="btnCloseInfoPanel" style="background:#0055A4; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Close</button>
+    </div>
+    <div id="infoList"></div>
+  </div>
+
+  <!-- Map + Info -->
+  <div id="errorBanner" role="alert"></div>
+  <div id="map2D" role="region" aria-label="Campus Map"></div>
+  <div id="info" role="status"></div>
+
+  <!-- Steps / Routing -->
+  <div class="directions-box" role="region" aria-live="polite">
+    <h3 id="stepsHeader">Steps</h3>
+    <ol id="stepsList"></ol>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+  <!-- Eigene JS Dateien -->
+  <script src="js/map.js"></script>
+  <script src="js/infos.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
