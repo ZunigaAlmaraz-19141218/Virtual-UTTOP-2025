@@ -142,7 +142,7 @@ function addMarkerToMap(infoObject) {
         <div style="position:absolute;top:8px;left:4px;width:10px;height:2px;background:#fff;"></div>
       </div>
     `;
-  }else if (infoObject.markerType === 'LoactionLink') {
+  }else if (infoObject.markerType === 'LocationLink') {
     markerHtml = '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff;"></div>';
   }else {
     markerHtml = '<div style="width:18px;height:18px;background:blue;border-radius:50%;border:2px solid #fff;"></div>';
@@ -261,7 +261,7 @@ function refreshInfoList() {
               <div style="position:absolute;top:8px;left:4px;width:10px;height:2px;background:#fff;"></div>
             </div>
           `;
-        } else if (info.markerType === 'LoactionLink') {
+        } else if (info.markerType === 'LocationLink') {
           iconHtml = '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
         }
          else {

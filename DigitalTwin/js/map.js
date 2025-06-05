@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
               lon: position.lng,
               comment: "Location from URL_Link",
               image: null,
-              markerType: "LoacationLink",
+              markerType: "LocationLink",
               timestamp: Date.now()
             };
 
