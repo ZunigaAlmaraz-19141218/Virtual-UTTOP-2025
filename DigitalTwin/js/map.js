@@ -323,9 +323,9 @@ function checkAndSaveUrlMarker() {
           const infoObject = {
             lat: position.lat,
             lon: position.lng,
-            comment: "Location Link",
+            comment: "Location from URL_Link",
             image: null,
-            markerType: "orange",
+            markerType: "LoacationLink",
             timestamp: Date.now()
           };
 
