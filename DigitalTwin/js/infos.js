@@ -259,9 +259,10 @@ function refreshInfoList() {
               <div style="position:absolute;top:8px;left:4px;width:10px;height:2px;background:#fff;"></div>
             </div>
           `;
-        } else if (infoObject.markerType === 'orange') {
-          markerHtml = '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff;"></div>';
-        } else {
+        } else if (info.markerType === 'orange') {
+          iconHtml = '<div style="width:18px;height:18px;background:orange;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
+        }
+         else {
           markerName = 'Unknown';
           iconHtml = '<div style="width:18px;height:18px;background:blue;border-radius:50%;border:2px solid #fff; display:inline-block;"></div>';
         }
