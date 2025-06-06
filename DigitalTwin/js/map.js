@@ -291,6 +291,53 @@ function highlightStep() {
 
   $('stepsHeader').textContent = `Steps (${bestIndex + 1}/${instructions.length})`;
 }
+function navigateToMarker(lat, lon) {
+  const destinationLatLng = L.latLng(lat, lon);
+
+  const originKey = $('origin').value;
+  const originLatLng = originKey === 'gps' && marker2D ? marker2D.getLatLng() : L.latLng(...locations[originKey]);
+
+  if (!originLatLng) {
+    showBanner('Please start GPS or select an origin.');
+    return;
+  }
+
+  if (routingControl) map2D.removeControl(routingControl);
+
+  routingControl = L.Routing.control({
+    router: L.Routing.osrmv1({
+      serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1',
+      profile: 'foot'
+    }),
+    waypoints: [originLatLng, destinationLatLng],
+    fitSelectedRoutes: true,
+    show: false,
+    routeWhileDragging: false,
+    addWaypoints: false,
+    createMarker: () => null,
+    lineOptions: { styles: [{ color: '#0055A4', weight: 5 }] }
+  })
+  .on('routesfound', e => {
+    const route = e.routes[0];
+
+    if (route.coordinates.some(c =>
+      !turf.booleanPointInPolygon(turf.point([c.lng, c.lat]), campusPoly)
+    )) {
+      return showBanner('Route leaves campus bounds.');
+    }
+
+    instructions = route.instructions;
+
+    $('stepsHeader').textContent = `Steps`;
+    $('stepsList').innerHTML = instructions.map((instruction, index) =>
+      `<li id="step-${index}">${instruction.text}</li>`
+    ).join('');
+  })
+  .on('routingerror', () => showBanner('Routing error occurred.'))
+  .addTo(map2D);
+
+  showBanner('Routing to selected marker...');
+}
 
 function checkAndSaveUrlMarker() {
   const urlParams = new URLSearchParams(window.location.search);

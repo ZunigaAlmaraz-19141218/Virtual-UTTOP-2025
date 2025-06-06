@@ -164,6 +164,7 @@ function addMarkerToMap(infoObject) {
     <strong>Comment:</strong> ${infoObject.comment || '(none)'}<br>
     <strong>Type:</strong> ${infoObject.markerType}<br>
     ${infoObject.image ? `<img src="${infoObject.image}" width="200">` : ''}
+    <button onclick="navigateToMarker(${infoObject.lat}, ${infoObject.lon})">Navigate to here</button>
   `);
 
   // On dragend → update position in DB
