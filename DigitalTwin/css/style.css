@@ -167,7 +167,7 @@ body {
   top: 0;
   left: 0;
 }
-
+/* === Popup Styles === */
 .leaflet-popup-content {
   pointer-events: auto !important;
 }
@@ -181,5 +181,31 @@ body {
   border-radius: 4px;
   margin-top: 6px;
   cursor: pointer;
+}
+/* Modal Overlay */
+#infoModalOverlay {
+  display: none; /* Anfang: versteckt */
+  position: fixed;
+  z-index: 999;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Modal Inhalt (dein Info Panel) */
+#infoListPanel {
+  display: none; /* Anfang: versteckt */
+  position: fixed;
+  z-index: 1000;
+  top: 10%; /* oder zentriert */
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+  width: 80%;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 

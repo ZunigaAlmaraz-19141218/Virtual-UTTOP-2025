@@ -214,15 +214,10 @@ const infoListPanel = $('infoListPanel');
 const infoList = $('infoList');
 
 btnViewInfos.addEventListener('click', () => {
-  if (infoListPanel.style.display === 'none' || infoListPanel.style.display === '') {
-    infoListPanel.style.display = 'block';
+  $('infoModalOverlay').style.display = 'block';
+  $('infoListPanel').style.display = 'block';
 
-    // ALWAYS refresh when opening panel!
-    refreshInfoList();
-    console.log("Info List refreshed after opening panel.");
-  } else {
-    infoListPanel.style.display = 'none';
-  }
+  refreshInfoList();
 });
 
 
@@ -288,11 +283,11 @@ function refreshInfoList() {
 }
 
 // === Close Info List Panel ===
-const btnCloseInfoPanel = $('btnCloseInfoPanel');
-
 btnCloseInfoPanel.addEventListener('click', () => {
-  infoListPanel.style.display = 'none';
+  $('infoModalOverlay').style.display = 'none';
+  $('infoListPanel').style.display = 'none';
 });
+
 
 // === Upload Info (placeholder) ===
 function uploadInfo(id) {
