@@ -1,0 +1,231 @@
+/*!
+ * @mainpage ENIT Campus Navigation App - Technical Documentation
+ *
+ * @section intro_sec Introduction
+ * The ENIT Campus Navigation App is a web-based application designed to help users navigate the ENIT campus.
+ * It offers interactive maps, real-time GPS tracking, indoor and outdoor routing, step highlighting, and the ability
+ * to add and manage information markers (including optional images).
+ *
+ * The application is developed using:
+ * - HTML5 + CSS3
+ * - JavaScript (ES6)
+ * - Leaflet
+ * - Leaflet Routing Machine
+ * - Turf.js
+ * - IndexedDB (browser-side database)
+ *
+ * @section version_sec Version
+ * The app version is dynamically loaded from a `version.txt` file and displayed in the UI.
+ *
+ * @section author_sec Author
+ * [Your Name], June 2025
+ *
+ * @section structure_sec Project Structure
+ *
+ * | File           | Purpose |
+ * |----------------|---------|
+ * | index.html     | Main UI and app layout |
+ * | css/style.css  | App styling |
+ * | js/app.js      | General helpers and version handling |
+ * | js/map.js      | Map logic, GPS, routing, navigation |
+ * | js/infos.js    | Info marker handling and IndexedDB logic |
+ * | version.txt    | Version file for UI display |
+ *
+ * @section features_sec Features
+ * - Interactive campus map (Leaflet)
+ * - Real-time GPS tracking
+ * - Smooth GPS signal filtering
+ * - Indoor/outdoor routing with OpenStreetMap + OSRM
+ * - Route step highlighting
+ * - Add, manage and delete information markers (IndexedDB)
+ * - Optional marker images
+ * - Version display
+ */
+
+/**
+ * @file app.js
+ * @brief General helpers and version handling for ENIT Campus Navigation App.
+ *
+ * Provides reusable UI utilities and global functions:
+ * - Info/error banners
+ * - Debounce utility
+ * - Version loading
+ */
+
+/**
+ * @function showBanner
+ * @brief Displays an info or error banner message.
+ *
+ * @param msg Message text to display.
+ */
+function showBanner(msg) { ... }
+
+/**
+ * @function debounce
+ * @brief Creates a debounced version of a function.
+ *
+ * @param fn Target function.
+ * @param delay Delay in milliseconds (default: 100 ms).
+ * @returns Debounced function.
+ */
+function debounce(fn, delay = 100) { ... }
+
+/**
+ * @brief Loads version from version.txt and displays it in the UI.
+ */
+fetch('version.txt')
+...
+
+/**
+ * @file map.js
+ * @brief Map handling, GPS, routing, and navigation logic.
+ *
+ * Core map logic:
+ * - Leaflet initialization
+ * - GPS tracking
+ * - Smooth GPS update
+ * - Campus polygon validation
+ * - Route generation
+ * - Step highlighting
+ * - Navigation to marker
+ * - URL-based marker saving
+ */
+
+/**
+ * @var map2D
+ * @brief Leaflet map instance.
+ */
+
+/**
+ * @var campusBounds
+ * @brief Latitude/longitude boundaries of the campus.
+ */
+
+/**
+ * @var campusPoly
+ * @brief Campus polygon used to validate routing stays inside campus.
+ */
+
+/**
+ * @function fill
+ * @brief Populates origin and destination dropdowns.
+ *
+ * @param id HTML element ID of select box.
+ */
+function fill(id) { ... }
+
+/**
+ * @function onPos
+ * @brief Callback for GPS updates.
+ *
+ * Updates the user's marker, applies smoothing, updates info panel, highlights steps.
+ */
+function onPos(position) { ... }
+
+/**
+ * @function highlightStep
+ * @brief Highlights the nearest navigation step on the current route.
+ */
+function highlightStep() { ... }
+
+/**
+ * @function navigateToMarker
+ * @brief Starts navigation routing to a specific marker.
+ *
+ * @param lat Latitude of target.
+ * @param lon Longitude of target.
+ */
+function navigateToMarker(lat, lon) { ... }
+
+/**
+ * @function checkAndSaveUrlMarker
+ * @brief Checks URL for a lat/lon marker and saves it if not already present.
+ */
+function checkAndSaveUrlMarker() { ... }
+
+/**
+ * @file infos.js
+ * @brief IndexedDB handling, info marker management, info list panel.
+ *
+ * Marker management:
+ * - IndexedDB schema "infos"
+ * - Save new markers
+ * - Add marker to map
+ * - Load all markers
+ * - Info list panel management
+ * - Marker editing (drag)
+ * - Marker deletion
+ */
+
+/**
+ * @var db
+ * @brief IndexedDB database instance.
+ */
+
+/**
+ * @function saveInfo
+ * @brief Saves a new info marker into IndexedDB.
+ *
+ * @param position Leaflet LatLng object.
+ * @param comment User comment.
+ * @param imageData Optional image data (Base64).
+ * @param markerType Marker type identifier.
+ */
+function saveInfo(position, comment, imageData, markerType) { ... }
+
+/**
+ * @function addMarkerToMap
+ * @brief Adds a marker to the map from an info object.
+ *
+ * @param infoObject Info object from IndexedDB.
+ */
+function addMarkerToMap(infoObject) { ... }
+
+/**
+ * @function loadAllMarkers
+ * @brief Loads all markers from IndexedDB and displays them on the map.
+ */
+function loadAllMarkers() { ... }
+
+/**
+ * @function refreshInfoList
+ * @brief Refreshes the "Saved Information" list panel.
+ */
+function refreshInfoList() { ... }
+
+/**
+ * @function uploadInfo
+ * @brief Placeholder for uploading an info marker to the server.
+ *
+ * @param id Info marker ID.
+ */
+function uploadInfo(id) { ... }
+
+/**
+ * @function deleteInfo
+ * @brief Deletes an info marker from IndexedDB and removes it from the map.
+ *
+ * @param event Click event.
+ * @param id Info marker ID.
+ */
+function deleteInfo(event, id) { ... }
+
+/**
+ * @file index.html
+ * @brief Main user interface for ENIT Campus Navigation App.
+ *
+ * Interface elements:
+ * - Campus map (Leaflet)
+ * - Start GPS button
+ * - Origin/destination selectors
+ * - Route steps panel
+ * - Add Information modal
+ * - View Information panel
+ * - Error banner
+ * - Version display
+ *
+ * External libraries:
+ * - Leaflet
+ * - Leaflet Routing Machine
+ * - Turf.js
+ */

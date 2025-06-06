@@ -1,0 +1,37 @@
+# ENIT Campus Navigation App
+
+## Versioning
+
+The app uses a simple versioning system based on a `version.txt` file.  
+This version number is automatically displayed in the app UI (top left corner).
+
+### Purpose
+
+- The `version.txt` stores a plain integer version number.
+- It is used to track which build or deployment version is currently running.
+- It is intentionally stored in Git — **do not delete this file**.
+- The version number is incremented manually or via script.
+
+### Automatic version increment
+
+You can use the following shell script to automatically increment the version number:
+
+```sh
+#!/bin/sh
+
+VERSION_FILE="DigitalTwin/version.txt"
+
+# Read current version
+version=$(cat "$VERSION_FILE")
+
+# Increment version
+new_version=$((version + 1))
+
+# Write new version to file
+echo "$new_version" > "$VERSION_FILE"
+
+# Add the file to Git index
+git add "$VERSION_FILE"
+
+# Output new version
+echo "Version updated to $new_version"
