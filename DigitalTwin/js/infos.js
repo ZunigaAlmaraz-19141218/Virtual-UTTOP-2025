@@ -89,15 +89,11 @@ btnSaveInfo.addEventListener('click', () => {
     reader.onload = e => {
       const imageData = e.target.result;
       saveInfo(position, comment, imageData, markerType);
-
-      // **Modal schließen NACH saveInfo()**
       closeInfoForm();
     };
     reader.readAsDataURL(file);
   } else {
     saveInfo(position, comment, null, markerType);
-
-    // **Modal schließen**
     closeInfoForm();
   }
 });
@@ -172,7 +168,6 @@ function addMarkerToMap(infoObject) {
     <button onclick="navigateToMarker(${infoObject.lat}, ${infoObject.lon})">Navigate to here</button>
   `, { closeButton: true, autoPan: true, maxWidth: 300, className: 'custom-popup' });
 
-  // On dragend → update position in DB
   marker.on('dragend', () => {
     const newPos = marker.getLatLng();
     console.log("Marker moved to:", newPos);
@@ -321,7 +316,6 @@ function deleteInfo(event, id) {
       console.log("Marker for Info ID", id, "removed from map.");
     }
 
-    // Refresh list
     if (infoListPanel.style.display !== 'none') {
       refreshInfoList();
     }

@@ -5,7 +5,6 @@
 
 // === Helper function ===
 const $ = id => document.getElementById(id);
-//document.addEventListener('DOMContentLoaded', function() {
 function debounce(func, wait) {
   let timeout;
   return function() {
@@ -28,7 +27,6 @@ const campusPoly = turf.polygon([[
   [0.0536, 43.2280], [0.0459, 43.2280],
   [0.0459, 43.2235]
 ]]);
-//test 36
 // === Fixed locations on campus ===
 const locations = {
   entrance: [43.225018, 0.052059],
@@ -119,7 +117,6 @@ const map2D = L.map('map2D', {
   minZoom: 17,
   maxZoom: 19,
   maxBounds: campusBounds,
-  //renderer: L.canvas()
 });
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -202,7 +199,6 @@ function onPos({ coords: { latitude: lat, longitude: lon, accuracy, altitude: al
     Floor: ${floor}
   `;
 
-  // Highlight nearest step if routing is active
   if (instructions.length) requestAnimationFrame(highlightStep);
 }
 
@@ -363,7 +359,6 @@ function checkAndSaveUrlMarker() {
         infos.push(cursor.value);
         cursor.continue();
       } else {
-        // Now check if Location Link already exists (same lat/lon)
         const existing = infos.find(info =>
           info.comment === "Location Link" &&
           Math.abs(info.lat - position.lat) < 0.00001 &&
@@ -373,7 +368,6 @@ function checkAndSaveUrlMarker() {
         if (existing) {
           console.log("Location Link already exists → will not add duplicate.");
         } else {
-          // Now save new Location Link
           const tx2 = db.transaction("infos", "readwrite");
           const store2 = tx2.objectStore("infos");
 
@@ -393,10 +387,8 @@ function checkAndSaveUrlMarker() {
             infoObject.id = newId;
             console.log("Location Link Info saved:", infoObject);
 
-            // Add marker
             addMarkerToMap(infoObject);
 
-            // Also refresh Info List (so you see it!)
             if (typeof refreshInfoList === "function" && infoListPanel.style.display !== 'none') {
               refreshInfoList();
               console.log("Info List refreshed after adding Location Link.");
@@ -411,6 +403,3 @@ function checkAndSaveUrlMarker() {
     };
   }
 }
-
-
-

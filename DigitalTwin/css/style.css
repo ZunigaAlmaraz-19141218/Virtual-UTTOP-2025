@@ -1,9 +1,4 @@
-/* ===========================
-   ENIT Campus Navigation CSS
-   Optimiert & sortiert
-   =========================== */
-
-/* === Variablen === */
+/* === Variable === */
 :root {
   --color-primary: #0055A4;
   --color-accent: #FFD700;
@@ -13,7 +8,7 @@
   --color-error-text: #721c24;
 }
 
-/* === Grundlayout === */
+/* === Basic layout === */
 * {
   margin: 0;
   padding: 0;
@@ -26,7 +21,7 @@ body {
   color: var(--color-text);
 }
 
-/* === Controls oben === */
+/* === Controls top === */
 #controls {
   background: var(--color-primary);
   color: #fff;
@@ -57,7 +52,7 @@ body {
   background: #e6c200;
 }
 
-/* === Map Bereich === */
+/* === Map area === */
 #map2D {
   width: 100%;
   height: 60vh;
@@ -65,7 +60,7 @@ body {
   border-bottom: 2px solid #ddd;
 }
 
-/* === Fehler-Banner === */
+/* === error page === */
 #errorBanner {
   display: none;
   background: var(--color-error-bg);
@@ -74,7 +69,7 @@ body {
   text-align: center;
 }
 
-/* === Info-Bereich === */
+/* === information page === */
 #info {
   padding: 12px;
   background: #fff;
@@ -192,12 +187,12 @@ body {
   background-color: rgba(0, 0, 0, 0.6);
 }
 
-/* Modal Inhalt (dein Info Panel) */
+/* Modal for view information */
 #infoListPanel {
-  display: none; /* Anfang: versteckt */
+  display: none; 
   position: fixed;
   z-index: 1000;
-  top: 10%; /* oder zentriert */
+  top: 10%; 
   left: 50%;
   transform: translateX(-50%);
   background: white;
@@ -235,7 +230,7 @@ body {
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-/* Save Button Style (wie Hauptseite Buttons) */
+/* Save Button Style*/
 #btnSaveInfo {
   background: #0055A4;
   color: white;
@@ -245,7 +240,7 @@ body {
   cursor: pointer;
 }
 
-/* Close Button (oben rechts, wie View Info) */
+/* Close Button*/
 #btnCancelInfo {
   background: #0055A4;
   color: white;
@@ -255,14 +250,10 @@ body {
   cursor: pointer;
 }
 
-/* Input + Select (gleicher Stil wie Seite) */
+/* Input + Select*/
 #infoForm input[type="text"],
 #infoForm select {
   width: 100%;
   padding: 6px;
   box-sizing: border-box;
 }
-
-
-
-
