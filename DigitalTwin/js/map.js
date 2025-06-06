@@ -29,20 +29,20 @@ const campusPoly = turf.polygon([[
 ]]);
 // === Fixed locations on campus ===
 const locations = {
-  entrance: [43.225018, 0.052059],
-  library: [43.224945, 0.051151],
-  cafeteria: [43.227491, 0.050948],
-  gym: [43.225022, 0.050141],
-  building_a: [43.225121, 0.051905],
-  building_b: [43.225188, 0.051330],
-  building_c: [43.224918, 0.050762],
-  building_d: [43.224511, 0.051267],
-  building_e: [43.224897, 0.051205],
-  building_i: [43.225722, 0.050753],
-  building_j: [43.226148, 0.050630],
-  building_k: [43.226481, 0.050634],
-  building_m: [43.223988, 0.050028],
-  building_iufm: [43.224808, 0.049464],
+  Entrance: [43.225018, 0.052059],
+  Library: [43.224945, 0.051151],
+  Cafeteria: [43.227491, 0.050948],
+  Gym: [43.225022, 0.050141],
+  Building_a: [43.225121, 0.051905],
+  Building_b: [43.225188, 0.051330],
+  Building_c: [43.224918, 0.050762],
+  Building_d: [43.224511, 0.051267],
+  Building_e: [43.224897, 0.051205],
+  Villa: [43.225722, 0.050753],
+  Building_j: [43.226148, 0.050630],
+  Building_k: [43.226481, 0.050634],
+  Building_m: [43.223988, 0.050028],
+  Building_iufm: [43.224808, 0.049464],
   Observatory_Midi_Pyrenees: [43.223953, 0.049200],
   Département_Génie_Électrique_et_InformatiqueIndustrielle: [43.225952, 0.048409],
   Département_Techniques_de_Commercialisation: [43.226238, 0.049283],
@@ -57,11 +57,11 @@ const locations = {
   Résidence_Universitaire_D: [43.227049, 0.050050],
   Résidence_Universitaire_E: [43.227233, 0.050063],
   Résidence_Universitaire_F: [43.227397, 0.050192],
-  laboratory_l0: [43.225374, 0.050196],
-  laboratory_l1: [43.225663, 0.050199],
-  laboratory_l2: [43.225945, 0.050215],
-  laboratory_l3: [43.226115, 0.050229],
-  laboratory_l4: [43.226295, 0.050246]
+  Laboratory_l0: [43.225374, 0.050196],
+  Laboratory_l1: [43.225663, 0.050199],
+  Laboratory_l2: [43.225945, 0.050215],
+  Laboratory_l3: [43.226115, 0.050229],
+  Laboratory_l4: [43.226295, 0.050246]
 };
 
 // === Populate origin and destination selects ===
@@ -70,11 +70,11 @@ function fill(id) {
   sel.innerHTML = `<option value="gps">My Location</option>`;
 
   const groups = {
-    "General Facilities": ["entrance", "library", "cafeteria", "gym"],
+    "General Facilities": ["Entrance", "Library", "Cafeteria", "Gym", "Villa"],
     "Academic Buildings": [
-      "building_a", "building_b", "building_c", "building_d", "building_e",
-      "building_i", "building_j", "building_k", "building_m", "building_iufm",
-      "Observatory_Midi_Pyrenees"
+      "Building A", "Building B", "Building C", "Building D", "Building E",
+      "Building J", "Building K", "Building M", "Building Iufm",
+      "Observatory Midi Pyrenees"
     ],
     "Departments": [
       "Département_Génie_Électrique_et_InformatiqueIndustrielle",
