@@ -70,11 +70,11 @@ function fill(id) {
   sel.innerHTML = `<option value="gps">My Location</option>`;
 
   const groups = {
-    "General Facilities": ["entrance", "library", "cafeteria", "gym", "Villa"],
+    "General Facilities": ["Entrance", "Library", "Cafeteria", "Gym", "Villa"],
     "Academic Buildings": [
-      "building_a", "building_b", "building_c", "building_d", "building_e",
-      "building_j", "building_k", "building_m", "building_iufm",
-      "Observatory_Midi_Pyrenees"
+      "Building A", "Building B", "Building C", "Building D", "Building E",
+      "Building J", "Building K", "Building M", "Building Iufm",
+      "Observatory Midi Pyrenees"
     ],
     "Departments": [
       "Département_Génie_Électrique_et_InformatiqueIndustrielle",
