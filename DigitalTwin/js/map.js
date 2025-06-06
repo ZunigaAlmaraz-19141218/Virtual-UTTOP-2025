@@ -38,7 +38,7 @@ const locations = {
   building_c: [43.224918, 0.050762],
   building_d: [43.224511, 0.051267],
   building_e: [43.224897, 0.051205],
-  building_i: [43.225722, 0.050753],
+  Villa: [43.225722, 0.050753],
   building_j: [43.226148, 0.050630],
   building_k: [43.226481, 0.050634],
   building_m: [43.223988, 0.050028],
@@ -70,10 +70,10 @@ function fill(id) {
   sel.innerHTML = `<option value="gps">My Location</option>`;
 
   const groups = {
-    "General Facilities": ["entrance", "library", "cafeteria", "gym"],
+    "General Facilities": ["entrance", "library", "cafeteria", "gym", "Villa"],
     "Academic Buildings": [
       "building_a", "building_b", "building_c", "building_d", "building_e",
-      "building_i", "building_j", "building_k", "building_m", "building_iufm",
+      "building_j", "building_k", "building_m", "building_iufm",
       "Observatory_Midi_Pyrenees"
     ],
     "Departments": [
