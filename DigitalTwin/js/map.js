@@ -287,15 +287,23 @@ function highlightStep() {
 
   $('stepsHeader').textContent = `Steps (${bestIndex + 1}/${instructions.length})`;
 }
+
 function navigateToMarker(lat, lon) {
   const destinationLatLng = L.latLng(lat, lon);
 
   const originKey = $('origin').value;
-  const originLatLng = originKey === 'gps' && marker2D ? marker2D.getLatLng() : L.latLng(...locations[originKey]);
 
-  if (!originLatLng) {
-    showBanner('Please start GPS or select an origin.');
-    return;
+  let originLatLng;
+
+  if (originKey === 'gps') {
+    if (marker2D) {
+      originLatLng = marker2D.getLatLng();
+    } else {
+      showBanner('Please start GPS first.');
+      return; // Exit early
+    }
+  } else {
+    originLatLng = L.latLng(...locations[originKey]);
   }
 
   if (routingControl) map2D.removeControl(routingControl);
@@ -334,6 +342,7 @@ function navigateToMarker(lat, lon) {
 
   showBanner('Routing to selected marker...');
 }
+
 
 function checkAndSaveUrlMarker() {
   const urlParams = new URLSearchParams(window.location.search);
