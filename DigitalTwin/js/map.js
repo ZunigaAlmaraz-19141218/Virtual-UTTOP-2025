@@ -5,7 +5,7 @@
 
 // === Helper function ===
 const $ = id => document.getElementById(id);
-document.addEventListener('DOMContentLoaded', function() {
+//document.addEventListener('DOMContentLoaded', function() {
 
   // === Campus boundaries ===
   const campusBounds = [
@@ -355,6 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
       };
     }
   }
-}); // Ende DOMContentLoaded
+//}); // Ende DOMContentLoaded
 
 
