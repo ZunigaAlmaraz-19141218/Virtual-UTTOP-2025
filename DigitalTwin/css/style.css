@@ -167,3 +167,19 @@ body {
   top: 0;
   left: 0;
 }
+
+.leaflet-popup-content {
+  pointer-events: auto !important;
+}
+
+.custom-popup button {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #0055A4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+

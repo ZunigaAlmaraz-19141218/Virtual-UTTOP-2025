@@ -165,7 +165,7 @@ function addMarkerToMap(infoObject) {
     <strong>Type:</strong> ${infoObject.markerType}<br>
     ${infoObject.image ? `<img src="${infoObject.image}" width="200">` : ''}
     <button onclick="navigateToMarker(${infoObject.lat}, ${infoObject.lon})">Navigate to here</button>
-  `);
+  `, { closeButton: true, autoPan: true, maxWidth: 300, className: 'custom-popup' });
 
   // On dragend → update position in DB
   marker.on('dragend', () => {
