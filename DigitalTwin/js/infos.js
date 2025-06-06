@@ -37,16 +37,22 @@ const infoComment = $('infoComment');
 
 // === Add Info button toggle ===
 btnAddInfo.addEventListener('click', () => {
-  infoForm.style.display = (infoForm.style.display === 'none' || infoForm.style.display === '') ? 'block' : 'none';
+  $('infoFormOverlay').style.display = 'block';
+  $('infoForm').style.display = 'block';
 });
+
 
 // === Cancel Info Form ===
 btnCancelInfo.addEventListener('click', () => {
-  infoForm.style.display = 'none';
-  infoComment.value = '';
-  fileInput.value = '';
-  preview.src = '';
+  $('infoFormOverlay').style.display = 'none';
+  $('infoForm').style.display = 'none';
+
+  // Reset Form
+  $('infoComment').value = '';
+  $('hiddenFileInput').value = '';
+  $('preview').src = '';
 });
+
 
 // === Image preview ===
 fileInput.addEventListener('change', () => {
@@ -64,39 +70,38 @@ fileInput.addEventListener('change', () => {
 
 // === Save Info button ===
 btnSaveInfo.addEventListener('click', () => {
-  let position;
-
-  if (marker2D) {
-    // GPS active → use current position
-    position = marker2D.getLatLng();
-  } else {
-    // No GPS → fallback to Building C
-    position = L.latLng(43.224918, 0.050762);
-    showBanner('No GPS active. Using default position: Building C');
-  }
-
+  let position = marker2D ? marker2D.getLatLng() : L.latLng(43.224918, 0.050762);
   const comment = infoComment.value;
   const markerType = $('infoMarkerType').value;
   const file = fileInput.files[0] || null;
 
-  // Read image as base64 or null
+  function closeInfoForm() {
+    $('infoFormOverlay').style.display = 'none';
+    $('infoForm').style.display = 'none';
+
+    $('infoComment').value = '';
+    $('hiddenFileInput').value = '';
+    $('preview').src = '';
+  }
+
   if (file) {
     const reader = new FileReader();
     reader.onload = e => {
       const imageData = e.target.result;
       saveInfo(position, comment, imageData, markerType);
+
+      // **Modal schließen NACH saveInfo()**
+      closeInfoForm();
     };
     reader.readAsDataURL(file);
   } else {
     saveInfo(position, comment, null, markerType);
-  }
 
-  // Reset form
-  infoForm.style.display = 'none';
-  infoComment.value = '';
-  fileInput.value = '';
-  preview.src = '';
+    // **Modal schließen**
+    closeInfoForm();
+  }
 });
+
 
 // === Save Info to IndexedDB ===
 function saveInfo(position, comment, imageData, markerType) {

@@ -33,7 +33,7 @@
     <button id="btnViewInfos">View Information</button>
   </div>
 
-  <!-- Info Form (Add Information) -->
+  <!-- Info Form (Add Information) 
   <div id="infoForm" style="display:none; padding:10px; background:#fff; border:1px solid #aaa; margin-top:10px;">
     <label for="infoComment">Comment:</label><br>
     <input type="text" id="infoComment" placeholder="Describe the issue..." style="width:100%;"><br><br>
@@ -51,7 +51,38 @@
     <button id="btnCancelInfo">Cancel</button>
     <br><br>
     <img id="preview" width="300" alt="Preview here">
+  </div> -->
+<!-- Modal Overlay for Add Information -->
+<div id="infoFormOverlay"></div>
+
+<!-- Add Information Modal -->
+<div id="infoForm">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div style="font-size: 1.5em; font-weight: bold; color: #FFD700;">Add Information</div>
+    <button id="btnCancelInfo" style="background: #0055A4; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Close</button>
   </div>
+
+  <label for="infoComment">Comment:</label><br>
+  <input type="text" id="infoComment" placeholder="Describe the issue..." style="width: 100%; padding: 6px;"><br><br>
+
+  <label for="hiddenFileInput">Optional Picture:</label><br>
+  <input type="file" id="hiddenFileInput" accept="image/*" capture="environment"><br><br>
+
+  <label>Marker Type:</label><br>
+  <select id="infoMarkerType" style="width: 100%; padding: 6px;">
+    <option value="tree">Tree</option>
+    <option value="cross">Cross</option>
+  </select>
+  <br><br>
+
+  <button id="btnSaveInfo" style="background: #0055A4; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Save Information</button>
+  <br><br>
+  <img id="preview" width="300" alt="Preview here">
+</div>
+
+
+
+
 
   <!-- Info List Panel 
   <div id="infoListPanel" style="display:none; padding:12px; background:#fff; border-top:2px solid #0055A4; max-height:30vh; overflow-y:auto;">
