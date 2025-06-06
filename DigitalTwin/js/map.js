@@ -89,7 +89,7 @@ function fill(id) {
       "Résidence_Universitaire_A", "Résidence_Universitaire_B", "Résidence_Universitaire_C",
       "Résidence_Universitaire_D", "Résidence_Universitaire_E", "Résidence_Universitaire_F"
     ],
-    "Laboratories": ["laboratory_l0", "laboratory_l1", "laboratory_l2", "laboratory_l3", "laboratory_l4"]
+    "Laboratories": ["Laboratory_l0", "Laboratory_l1", "Laboratory_l2", "Laboratory_l3", "Laboratory_l4"]
   };
 
   for (let label in groups) {
